@@ -13,7 +13,7 @@ LOGO="\
          \__ \ ' \/ -_) | | _ \/ _ \ \ /    　
          |___/_||_\___|_|_|___/\___/_\_\    　
                                             　
-By: Anya Lin$(seq -s ' ' 1 $((36 - ${#VERSION})) | tr -d '0-9')v$VERSION
+By: Anya Lin$(seq -s ' ' 1 $[ 36 - ${#VERSION} ] | tr -d '0-9')v$VERSION
 ================================================="
 
 DEPENDENCIES="curl unzip tar jq"
@@ -96,6 +96,7 @@ case "$MENUID" in
 			downloadTo "https://codeload.github.com/muink/shellbox/tar.gz/v$NEWWVER" "/tmp/shellbox-$NEWWVER.tar.gz" \
 			&& tar -C "/tmp/" -xzf "/tmp/shellbox-$NEWWVER.tar.gz" shellbox-$NEWWVER \
 			&& cp -rf "/tmp/shellbox-$NEWWVER/" "$MAINDIR" >/dev/null \
+			&& rm -rf "/tmp/shellbox-$NEWWVER" \
 			&& yeah "Upgrade completed.\n\n" \
 			|| err "Upgrade failed.\n\n" 1
 			if [ "$?" = "1" ]; then
@@ -103,6 +104,7 @@ case "$MENUID" in
 			fi
 		fi
 		pause
+		exit
 	;;
 	4)
 		checkCoreVersion

@@ -83,7 +83,7 @@ depCheck() {
 	for dep in $DEPENDENCIES; do
 		if ! command -v $dep >/dev/null; then
 			misss=${misss:+$misss }$dep
-			((errcount++))
+			let errcount++
 		fi
 	done
 
@@ -112,11 +112,11 @@ depCheck() {
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n" 0
 						;;
 						unzip|tar)
-							err "Please upgrade MinGW64.\n" 0
+							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n" 0
 						;;
 						jq)
 							downloadTo "https://github.com/jqlang/jq/releases/latest/download/jq-windows-amd64.exe" "$BINADIR/jq.exe"
-							command -v jq >/dev/null && ((errcount--)) || err "Please download \"https://github.com/jqlang/jq/releases/latest/download/jq-windows-amd64.exe\" and put to \"$BINADIR/jq.exe\"\n" 0
+							command -v jq >/dev/null && let errcount-- || err "Please download \"https://github.com/jqlang/jq/releases/latest/download/jq-windows-amd64.exe\" and put to \"$BINADIR/jq.exe\"\n" 0
 						;;
 					esac
 				done

@@ -14,11 +14,25 @@ dotLength() {
 }
 
 strToString() {
-	$SED 's|^|"|;s|$|"|'
+	local str
+	if [ -z "$1" ]; then
+		while read -r -t1 str; do
+			echo "$str" | $SED 's|^|"|;s|$|"|'
+		done
+	else
+		echo "$1" | $SED 's|^|"|;s|$|"|'
+	fi
 }
 
 StringTostr() {
-	$SED 's|^"||;s|"$||'
+	local str
+	if [ -z "$1" ]; then
+		while read -r -t1 str; do
+			echo "$str" | $SED 's|^"||;s|"$||'
+		done
+	else
+		echo "$1" | $SED 's|^"||;s|"$||'
+	fi
 }
 
 # func <val>

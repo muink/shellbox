@@ -5,6 +5,17 @@
 # See /LICENSE for more information.
 #
 
+export JQFUNC_filterCheck='def filterCheck($name):
+	def exclude:
+		def loop($i):
+			if $i >= length then .[0].action == "include" else
+				.[$i].regex as $regex
+				| if ($name | test($regex;null)) then .[$i].action == "exclude"
+				else loop($i+1) end
+			end;
+		loop(0);
+	exclude;'
+
 # func <url>
 urldecode() {
 	: "${*//+/ }"
@@ -619,19 +630,39 @@ filterCheck() {
 	local name="$1" filter="$2" rcode
 	[ -n "$filter" ] || return 1
 
-	rcode="$(jsonSelect filter \
-		'$ARGS.positional[0] as $name
-		| def exclude:
-			def loop($i):
-				if $i >= length then .[0].action == "include" else
-					.[$i].regex as $regex
-					| if ($name | test($regex;null)) then .[$i].action == "exclude"
-					else loop($i+1) end
-				end;
-			loop(0);
-		exclude' \
-		"$name" \
-	)"
+	rcode="$(jsonSelect filter "$JQFUNC_filterCheck filterCheck(\"$name\")" )"
 
 	[ "$rcode" = "true" ] || return 1
+}
+
+# func <var> <templates> <tags>
+build_config() {
+	echo "$1" | grep -qE "^(k|result|import|templates|tags|outbounds)$" &&
+		{ logs err "build_config: Variable name '$1' is conflict.\n"; return 1; }
+	local k result='{}' import='{}' templates="$2" tags="$3"
+	[ -n "$1" ] && eval "$1=''" || return 1
+
+	pushd "$TEMPDIR" >/dev/null
+	eval "jsonMergeFiles result $(jsonSelect templates '@sh')" || { logs err "build_config: Templates merge failed.\n"; popd; return 1; }
+	popd >/dev/null
+	local outbounds="$(jsonSelect result '.outbounds')"
+	echo $outbounds
+
+	if [ "$(jsonSelect tags 'length')" -gt 0 ]; then
+		jsonSetjson import '[$ARGS.positional[0][] | select(.tag | test("^(\( $ARGS.positional[1] | join("|") ))$")) | {(.tag): .}] | add' "$PROVIDERS" "$tags"
+		for k in $(jsonSelect tags '.[]'); do
+			jsonSetjson import \
+				".$k.prefix as \$prefix
+				| .$k.subgroup=(.$k.subgroup | arrays//[.])
+				| .$k.nodes=[ \$ARGS.positional[0] | .[] | .tag=\$prefix+.tag ]" \
+				"$(cat "$SUBSDIR/$k.json")"
+		done
+		echo $import
+
+		echo subgroup tag.json
+	fi
+
+	echo 'pres outbounds del(.filter) del("{all_group}", "{all}")'
+
+	eval "$1=\"\$result\""
 }

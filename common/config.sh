@@ -124,8 +124,7 @@ verifyConfigs() {
 				if (.[$q] | type == "string" and test("^[[:word:]\\.]+$")) then empty, loop($q+1)
 				else "Template [\($q)] of the config [$i] is invalid." end
 			end;
-		if type == "string" and test("^[[:word:]\\.]+$") then empty
-		elif type == "array" and length > 0 then loop(0)
+		if type == "array" and length > 0 then loop(0)
 		else 1 end;'
 
 	local JQFUNC_config='def config:
@@ -173,7 +172,7 @@ buildConfig() {
 	verifyConfigs "$configs" || return 1
 
 	local config total="$(jsonSelect configs 'length')" count=0
-	local cfg_result
+	local cfg_result PROVIDERS="$(jsonSelect providers 'del(.[].url, .[].ua, .[].filter)')"
 
 	local time=$(date -u +%s%3N) i k
 	for i in $(seq 0 $[ $total -1 ]); do
@@ -186,7 +185,7 @@ buildConfig() {
 		[ "$enabled" = "true" ] || continue
 		build_config cfg_result "$templates" "$providers" || continue
 
-		echo "$cfg_result" > "$CONFDIR/$output"
+		echo "$cfg_result" | jq > "$CONFDIR/$output"
 		let count++
 	done
 	time=$[ $(date -u +%s%3N) - $time ]

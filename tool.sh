@@ -72,7 +72,7 @@ else
 	export DATE=date
 	export GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar awk jq $SED $MD5 $DATE $GETOPT"
+DEPENDENCIES="curl unzip tar awk tr jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 

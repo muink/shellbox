@@ -18,59 +18,6 @@ urldecode_params() {
 }
 
 # func <url>
-parseURL() {
-	isEmpty "$1" && return 1
-	local services='{ "http": 80, "https": 443 }' obj='{}' url="$1" tmp=''
-
-	obj="$(echo "$obj" | jq -c --args '.href=$ARGS.positional[0]' "$url" )"
-	# hash / URI fragment    /#(.+)$/
-	obj="$(echo "$obj" | jq -c --args '.hash=$ARGS.positional[0]' "$(echo "$url" | $SED -En 's|.*#(.+)$|\1|p')" )"
-	url="${url%%#*}"
-	# protocol / URI scheme    /^([[:alpha:]][[:alnum:]\+\-\.]*):/
-	obj="$(echo "$obj" | jq -c --args '.protocol=$ARGS.positional[0]' "$(echo "$url" | $SED -En 's|^([[:alpha:]][[:alnum:]\.+-]*):.*|\1|p')" )"
-	url="${url#*:}"
-	# search / URI query    /\?(.+)$/
-	tmp="$(echo "$url" | $SED -En 's|.*\?(.+)$|\1|p')"
-	obj="$(echo "$obj" | jq -c --args '.search=$ARGS.positional[0]' "$tmp" )"
-	obj="$(echo "$obj" | jq -c --jsonargs '.searchParams=$ARGS.positional[0]' "$(urldecode_params "$tmp" )" )"
-	url="${url%%\?*}"
-	# ^//    /^\/\//
-	url="${url#//}"
-	# path    /[^\/]+(\/.+)$/
-	obj="$(echo "$obj" | jq -c --args '.path="/"+$ARGS.positional[0]' "$(echo "$url" | $SED -En 's|[^\/]+\/(.+)$|\1|p')" )"
-	url="${url%%/*}"
-	# userinfo    /^([^@]+)@/
-	obj="$(echo "$obj" | jq -c --args '.userinfo=$ARGS.positional[0]' "$(echo "$url" | $SED -En 's|^([^@]+)@.*|\1|p')" )"
-	url="${url#*@}"
-	# port    /:(\d+)$/
-	obj="$(echo "$obj" | jq -c --args '.port=$ARGS.positional[0]' "$(echo "$url" | $SED -En 's|.*:([0-9]+)$|\1|p')" )"
-	url="${url%:*}"
-	# host
-	obj="$(echo "$obj" | jq -c --args '.host=$ARGS.positional[0]' "$(echo "$url" | tr -d '[]')" )"
-
-	isEmpty "$(echo "$obj" | jq '.protocol')" || isEmpty "$(echo "$obj" | jq '.host')" && return 1
-
-	isEmpty "$(echo "$obj" | jq '.port')" && \
-		obj="$(echo "$obj" | jq -c --args '.port=$ARGS.positional[0]' "$(echo "$services" | jq --argjson obj "$obj" '.[$obj.protocol]')" )"
-	isEmpty "$(echo "$obj" | jq '.port')" && return 1
-
-	tmp="$(echo "$obj" | jq '.userinfo' | StringTostr)"
-	if ! isEmpty "$tmp"; then
-		# password    /:([^:]+)$/
-		obj="$(echo "$obj" | jq -c --args '.password=$ARGS.positional[0]' "$(echo "$tmp" | $SED -En 's|.*:([^:]+)$|\1|p')" )"
-		tmp="${tmp%:*}"
-
-		if echo "$tmp" | grep -qE "^[[:alnum:]_\.+-]+$"; then
-			obj="$(echo "$obj" | jq -c --args '.username=$ARGS.positional[0]' "$tmp" )"
-		else
-			obj="$(echo "$obj" | jq -c 'del(.password)' )"
-		fi
-	fi
-
-	echo "$obj"
-}
-
-# func <url>
 parseURL2() {
 	isEmpty "$1" && return 1
 	local services='{ "http": 80, "https": 443 }' obj='{}' url="$1"
@@ -120,6 +67,22 @@ parseURL2() {
 	obj="$(echo "$obj" | jq -c --jsonargs '.searchParams=$ARGS.positional[0]' "$(urldecode_params "$search" )" )"
 
 	echo "$obj"
+}
+
+# func <url>
+buildURL() {
+	isEmpty "$1" && return 1
+	local services='{ "http": 80, "https": 443 }' obj="$1" url=
+	local scheme userinfo hostport path query fragment
+
+	scheme="$(echo "$obj" | jq '.protocol' | StringTostr)"
+	userinfo="$(echo "$obj" | jq '.username + if .password == "" then "" else ":" + .password end' | StringTostr)"
+	hostport="$(echo "$obj" | jq '.host + ":" + .port' | StringTostr)"
+	path="$(echo "$obj" | jq 'if .path == "/" then "" else .path end' | StringTostr)"
+	query="$(echo "$obj" | jq '.searchParams | length as $count | keys_unsorted as $keys | map(.) as $vals | 0 | while(. < $count; .+1) | $keys[.] + "=" + $vals[.]' | StringTostr | tr '\n' '&' | sed 's|^&||;s|&$||')"
+	fragment="$(echo "$obj" | jq '.hash' | StringTostr)"
+
+	echo "$scheme://${userinfo:+$userinfo@}$hostport$path${query:+?$query}${fragment:+#$fragment}"
 }
 
 # func <uri>

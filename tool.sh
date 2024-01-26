@@ -13,7 +13,7 @@ LOGO="\
          \__ \ ' \/ -_) | | _ \/ _ \ \ /    　
          |___/_||_\___|_|_|___/\___/_\_\    　
                                             　
-By: Anya Lin$(seq -s ' ' 1 $[ 36 - ${#VERSION} ] | tr -d '0-9')v$VERSION
+By: Anya Lin$(printf "%$[ 40 - ${#VERSION} ]s" v$VERSION)
 ================================================="
 
 DEPENDENCIES="curl unzip tar jq"

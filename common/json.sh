@@ -39,3 +39,8 @@ StringTostr() {
 isEmpty() {
 	[ ! "$1" -o "$1" = '""' -o "$1" = "null" -o "$(echo "$1" | jq '(type|test("object|array")) and (length == 0)' 2>/dev/null)" = "true" ] || return 1
 }
+
+# func <objvar> [filters]
+jsonSelect() {
+	eval "echo \"\$$1\" | jq -rc '$2'"
+}

@@ -16,7 +16,7 @@ LOGO="\
 By: Anya Lin$(printf "%$[ 40 - ${#VERSION} ]s" v$VERSION)
 ================================================="
 
-DEPENDENCIES="curl unzip tar jq"
+DEPENDENCIES="curl unzip tar md5sum jq"
 
 # Main program
 MAINDIR="$(cd $(dirname $0); pwd)"
@@ -41,7 +41,13 @@ export PATH="$BINADIR:$PATH"
 [ -f "$MAINSET" ] || touch "$MAINSET"
 getSysinfo || { pause; exit; }
 echo System: $OS-$ARCH
-[ "$OS" = "darwin" ] && SED=gsed || SED=sed
+if [ "$OS" = "darwin" ]; then
+	SED=gsed
+	MD5='md5 -q'
+else
+	SED=sed
+	MD5='md5sum'
+fi
 depCheck || { pause; exit; }
 
 

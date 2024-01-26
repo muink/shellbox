@@ -37,6 +37,11 @@ downloadTo() {
 	curl --connect-timeout 10 --retry 3 -sSL "$1" ${2:+-o "$2"}
 }
 
+# func <str>
+calcStringMD5() {
+	echo -n "$1" | $MD5 | cut -f1 -d' '
+}
+
 # return: $OS $ARCH
 getSysinfo() {
 	case "$OSTYPE" in
@@ -95,7 +100,16 @@ depCheck() {
 		;;
 		darwin*)
 			if [ "$errcount" -gt 0 ]; then
-				err "Missing dependencies: $misss\n\tPlease install manually using the homebrew.\n" 0
+				for dep in $misss; do
+					case "$dep" in
+						md5sum)
+							let errcount--
+						;;
+						*)
+							err "Missing dependencies: $dep, Please install manually using the homebrew.\n" 0
+						;;
+					esac
+				done
 			fi
 		;;
 		cygwin)
@@ -111,7 +125,7 @@ depCheck() {
 						curl)
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n" 0
 						;;
-						unzip|tar)
+						unzip|tar|md5sum)
 							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n" 0
 						;;
 						jq)

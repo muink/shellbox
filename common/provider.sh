@@ -150,7 +150,7 @@ parse_uri() {
 	case "$type" in
 		http|https)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && warn "parse_uri: URI '$uri' is not a valid format\n" && return 1
+			[ -z "$url" ] && warn "parse_uri: URI '$uri' is not a valid format.\n" && return 1
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="http" |
@@ -172,6 +172,24 @@ parse_uri() {
 				config="$(echo "$config" | jq -c '.tls={"enabled":true}')"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && warn "parse_uri: URI '$uri' is not a valid format.\n" && return 1
+
+			config="$(echo '{}' | jq -c --args \
+				'.type="socks" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber)' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$(jsonSelect url '.href')" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+			)"
+			config="$(echo "$config" | jq -c --args '.version=$ARGS.positional[0]' "$(echo "$type" | $SED -En 's,^socks(4a?|5h?)?$,\1,;s|^5h$|5|;s|^$|5|;p')" )"
+			if ! isEmpty "$(jsonSelect url '.username')"; then
+				config="$(echo "$config" | jq -c --args '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" )"
+				isEmpty "$(jsonSelect url '.password')" || \
+					config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
+			fi
 		;;
 		ss)
 		;;
@@ -188,6 +206,10 @@ parse_uri() {
 		vless)
 		;;
 		vmess)
+		;;
+		*)
+			warn "parse_uri: URI '$uri' is not supported.\n"
+			return 1
 		;;
 	esac
 

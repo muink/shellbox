@@ -29,6 +29,49 @@ urlencode_params() {
 	echo "$1" | jq -r '. | length as $count | keys_unsorted as $keys | map(.) as $vals | 0 | while(. < $count; .+1) | $keys[.] + "=" + ($vals[.]|tostring)' | tr -d '\r' | tr '\n' '&' | sed 's|&$||'
 }
 
+# func <type> <str>
+validation() {
+	[ -n "$1" ] && { local type="$1"; } || { err "validation: No type specified.\n"; return 1; }
+	[ -n "$2" ] && { local str="$2"; } || { err "validation: String is empty.\n"; return 1; }
+	case "$type" in
+		host)
+			validation hostname "$str" || validation ipaddr4 "$str" || validation ipaddr6 "$str" && return 0
+			return 1
+		;;
+		port)
+			[ "$str" -ge 0 -a "$str" -le 65535 ] || return 1
+		;;
+		hostname)
+			[ "${#str}" -le 253 ] || return 1
+			echo "$str" | grep -qE "^[[:alnum:]_]+$" && return 0
+			echo "$str" | grep -E "^[[:alnum:]_][[:alnum:]_\.-]*[[:alnum:]]$" | grep -qE "[^0-9\.]" && return 0
+			return 1
+		;;
+		ipaddr4)
+			echo "$str" | grep -qE "^((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})$" || return 1
+		;;
+		ipaddr6)
+			echo "$str" | $SED 's|^\[\(.*\)\]$|\1|' | grep -qE "^(\
+([[:xdigit:]]{1,4}:){7}[[:xdigit:]]{1,4}|\
+([[:xdigit:]]{1,4}:){1,7}:|\
+([[:xdigit:]]{1,4}:){1,6}:[[:xdigit:]]{1,4}|\
+([[:xdigit:]]{1,4}:){1,5}(:[[:xdigit:]]{1,4}){1,2}|\
+([[:xdigit:]]{1,4}:){1,4}(:[[:xdigit:]]{1,4}){1,3}|\
+([[:xdigit:]]{1,4}:){1,3}(:[[:xdigit:]]{1,4}){1,4}|\
+([[:xdigit:]]{1,4}:){1,2}(:[[:xdigit:]]{1,4}){1,5}|\
+[[:xdigit:]]{1,4}:(:[[:xdigit:]]{1,4}){1,6}|\
+:((:[[:xdigit:]]{1,4}){1,7}|:)|\
+fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
+::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})|\
+([[:xdigit:]]{1,4}:){1,4}:((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2}))$" || return 1
+		;;
+		*)
+			err "validation: Invalid type '$type'.\n"
+			return 1
+		;;
+	esac
+}
+
 # func <url>
 parseURL() {
 	isEmpty "$1" && return 1
@@ -45,10 +88,11 @@ parseURL() {
 	# userinfo    /^([^@]+)@/
 	# host    /^[\w\-\.]+/
 	# port    /^:(\d+)/
-	eval "$(echo "$url" | $SED -En "s|^(([^@]+)@)?([[:alnum:]_\.-]+)(:([0-9]+))?(.*)|userinfo='\2';host='\3';port='\5';url='\6'|p")"
-	host="$(echo "$host" | tr -d '[]')"
+	eval "$(echo "$url" | $SED -En "s,^(([^@]+)@)?([[:alnum:]_\.-]+|\[[[:xdigit:]:\.]+\])(:([0-9]+))?(.*),userinfo='\2';host='\3';port='\5';url='\6',p")"
 	[ -z "$port" ] && port="$(echo "$services" | jq -r --arg protocol "$protocol" '.[$protocol]')"
 	[ -z "$host" -o -z "$port" ] && return 1
+	validation host "$host" || return 1
+	validation port "$port" || return 1
 
 	if [ -n "$userinfo" ]; then
 		# username    /^[[:alnum:]\+\-\_\.]+/
@@ -104,6 +148,25 @@ parse_uri() {
 
 	case "$type" in
 		http|https)
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && warn "parse_uri: URI '$uri' is not a valid format\n" && return 1
+
+			config="$(echo '{}' | jq -c --args \
+				'.type="http" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber)' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$(jsonSelect url '.href')" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+			)"
+			if ! isEmpty "$(jsonSelect url '.username')"; then
+				config="$(echo "$config" | jq -c --args '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" )"
+				isEmpty "$(jsonSelect url '.password')" || \
+					config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
+			fi
+			[ "$type" = "https" ] && \
+				config="$(echo "$config" | jq -c '.tls={"enabled":true}')"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 		;;
@@ -124,4 +187,11 @@ parse_uri() {
 		vmess)
 		;;
 	esac
+
+	if ! isEmpty "$config"; then
+		isEmpty "$(jsonSelect config '.server')" || \
+			config="$(echo "$config" | jq -c --args '.server=$ARGS.positional[0]' "$(jsonSelect config '.server' | tr -d '[]')" )"
+	fi
+
+	echo "$config"
 }

@@ -13,13 +13,13 @@ CLR_BLUE='\033[0;33m'
 
 # func <msg> [errcode]
 err() {
-	echo -ne "${CLR_RED}Error: $1${CLR_RST}"
+	>&2 echo -ne "${CLR_RED}Error: $1${CLR_RST}"
 	return ${2:-1}
 }
 
 # func <msg> [errcode]
 warn() {
-	echo -ne "${CLR_YELLOW}Warning: $1${CLR_RST}"
+	>&2 echo -ne "${CLR_YELLOW}Warning: $1${CLR_RST}"
 	return ${2:-1}
 }
 

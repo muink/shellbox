@@ -76,7 +76,7 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 parseURL() {
 	isEmpty "$1" && return 1
 	local services='{ "http": 80, "https": 443 }' obj='{}' url="$1"
-	local protocol userinfo username password host port path search hash
+	local protocol userinfo username password host port fpath path search hash
 
 	obj="$(echo "$obj" | jq -c --args '.href=$ARGS.positional[0]' "$url" )"
 	# hash / URI fragment    /#(.+)$/
@@ -102,7 +102,8 @@ parseURL() {
 
 	# path    /^(\/[^\?\#]*)/
 	# search / URI query    /^\?([^#]+)/
-	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|path='\2';search='\4'|p")"
+	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|fpath='\1';path='\2';search='\4'|p")"
+	[ -n "$fpath" ] && path="／$path"
 
 	obj="$(echo "$obj" | jq -c --args \
 		'.protocol=$ARGS.positional[0] |
@@ -110,7 +111,7 @@ parseURL() {
 		.port=($ARGS.positional[2]|tonumber) |
 		.username=$ARGS.positional[3] |
 		.password=$ARGS.positional[4] |
-		.path="/"+$ARGS.positional[5] |
+		.path=$ARGS.positional[5] |
 		.hash=$ARGS.positional[6]' \
 		"$protocol" \
 		"$host" \
@@ -134,7 +135,7 @@ buildURL() {
 	scheme="$(jsonSelect obj '.protocol')"
 	userinfo="$(jsonSelect obj '.username + if (.password|length) > 0 then ":" + .password else "" end')"
 	hostport="$(jsonSelect obj '.host + ":" + (.port|tostring)')"
-	path="$(jsonSelect obj 'if .path == "/" then "" else .path end')"
+	path="$(jsonSelect obj '.path' | $SED 's|^／|/|')"
 	query="$(urlencode_params "$(jsonSelect obj '.searchParams')" )"
 	fragment="$(jsonSelect obj '.hash')"
 
@@ -165,6 +166,8 @@ parse_uri() {
 				isEmpty "$(jsonSelect url '.password')" || \
 					config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
 			fi
+			isEmpty "$(jsonSelect url '.path')" || \
+				config="$(echo "$config" | jq -c --args '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^／||')" )"
 			[ "$type" = "https" ] && \
 				config="$(echo "$config" | jq -c '.tls={"enabled":true}')"
 		;;

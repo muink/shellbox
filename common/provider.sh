@@ -97,7 +97,7 @@ parseURL() {
 	if [ -n "$userinfo" ]; then
 		# username    /^[[:alnum:]\+\-\_\.]+/
 		# password    /^:([^:]+)/
-		eval "$(echo "$userinfo" | $SED -En "s|^([[:alnum:]_\.+-]+)(:([^:]+))?|username='\1';password='\3'|p")"
+		eval "$(echo "$userinfo" | $SED -En "s|^([[:alnum:]_\.+-]+)(:([^:]+))?.*|username='\1';password='\3'|p")"
 	fi
 
 	# path    /^(\/[^\?\#]*)/
@@ -142,15 +142,16 @@ buildURL() {
 	echo "$scheme://${userinfo:+$userinfo@}$hostport$path${query:+?$query}${fragment:+#$fragment}"
 }
 
-# func <uri>
+# func <var> <uri>
 parse_uri() {
 	local config url params
-	local uri="$1" type="${1%%:*}"
+	[ -n "$1" ] && eval "$1=''" || return 1
+	local uri="$2" type="${2%%:*}"
 
 	case "$type" in
 		http|https)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && warn "parse_uri: URI '$uri' is not a valid format.\n" && return 1
+			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="http" |
@@ -173,7 +174,7 @@ parse_uri() {
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && warn "parse_uri: URI '$uri' is not a valid format.\n" && return 1
+			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="socks" |
@@ -218,5 +219,5 @@ parse_uri() {
 			config="$(echo "$config" | jq -c --args '.server=$ARGS.positional[0]' "$(jsonSelect config '.server' | tr -d '[]')" )"
 	fi
 
-	echo "$config"
+	eval "$1=\"\$config\""
 }

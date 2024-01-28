@@ -170,7 +170,7 @@ parse_uri() {
 			isEmpty "$(jsonSelect url '.path')" || \
 				config="$(echo "$config" | jq -c --args '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^／||')" )"
 			[ "$type" = "https" ] && \
-				config="$(echo "$config" | jq -c '.tls={"enabled":true}')"
+				config="$(echo "$config" | jq -c '.tls.enabled=true')"
 		;;
 		hysteria)
 		;;
@@ -243,6 +243,7 @@ parse_uri() {
 			# https://p4gefau1t.github.io/trojan-go/developer/url/
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+			params="$(jsonSelect url '.searchParams')"
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="trojan" |
@@ -250,14 +251,42 @@ parse_uri() {
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber) |
 				.password=$ARGS.positional[3] |
-				.tls={"enabled":true}' \
+				.tls.enabled=true' \
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 				"$(urldecode "$(jsonSelect url '.username')" )" \
 			)"
-			#tls
-			#transport
+			isEmpty "$(jsonSelect params '.sni')" || \
+				config="$(echo "$config" | jq -c --args '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )" )"
+			local trojan_transport_type="$(jsonSelect params '.type')"
+			if ! isEmpty "$trojan_transport_type" && [ "$trojan_transport_type" != "tcp" ]; then
+				config="$(echo "$config" | jq -c --args '.transport.type=$ARGS.positional[0]' "$trojan_transport_type" )"
+				case "$trojan_transport_type" in
+					grpc)
+						isEmpty "$(jsonSelect params '.serviceName')" || \
+							config="$(echo "$config" | jq -c --args '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )" )"
+					;;
+					ws)
+						if ! isEmpty "$(jsonSelect params '.path')"; then
+							local trojan_transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
+							if echo "$trojan_transport_depath" | grep -qE "\?ed="; then
+								config="$(echo "$config" | jq -c --args \
+									'. as $config |
+									$ARGS.positional[0]|split("?ed=") as $data |
+									$config |
+									.transport.early_data_header_name="Sec-WebSocket-Protocol" |
+									.transport.max_early_data=($data[1]|tonumber) |
+									.transport.path="/"+$data[0]' \
+									"${trojan_transport_depath#/}" \
+								)"
+							else
+								config="$(echo "$config" | jq -c --args '.transport.path="/"+$ARGS.positional[0]' "${trojan_transport_depath#/}" )"
+							fi
+						fi
+					;;
+				esac
+			fi
 		;;
 		tuic)
 		;;

@@ -42,5 +42,5 @@ isEmpty() {
 
 # func <objvar> [filters]
 jsonSelect() {
-	eval "echo \"\$$1\" | jq -rc '$2'"
+	eval "echo \"\$$1\" | jq -c '$2' | jq -rc './/\"\"'"
 }

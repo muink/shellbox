@@ -172,6 +172,10 @@ parse_uri() {
 			[ "$type" = "https" ] && \
 				config="$(echo "$config" | jq -c '.tls={"enabled":true}')"
 		;;
+		hysteria)
+		;;
+		hysteria2|hy2)
+		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
@@ -237,17 +241,13 @@ parse_uri() {
 		;;
 		trojan)
 		;;
-		wireguard)
-		;;
-		hysteria)
-		;;
-		hysteria2|hy2)
-		;;
 		tuic)
 		;;
 		vless)
 		;;
 		vmess)
+		;;
+		wireguard)
 		;;
 		*)
 			warn "parse_uri: URI '$uri' is not supported.\n"

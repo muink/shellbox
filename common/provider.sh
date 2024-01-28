@@ -158,7 +158,7 @@ parse_uri() {
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber)' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$(jsonSelect url '.href')" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 			)"
@@ -185,7 +185,7 @@ parse_uri() {
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber)' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$(jsonSelect url '.href')" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 			)"
@@ -206,7 +206,7 @@ parse_uri() {
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber)' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$(jsonSelect url '.href')" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 			)"
@@ -240,6 +240,24 @@ parse_uri() {
 			fi
 		;;
 		trojan)
+			# https://p4gefau1t.github.io/trojan-go/developer/url/
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+
+			config="$(echo '{}' | jq -c --args \
+				'.type="trojan" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.password=$ARGS.positional[3] |
+				.tls={"enabled":true}' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+				"$(urldecode "$(jsonSelect url '.username')" )" \
+			)"
+			#tls
+			#transport
 		;;
 		tuic)
 		;;

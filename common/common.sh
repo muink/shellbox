@@ -42,6 +42,12 @@ calcStringMD5() {
 	echo -n "$1" | $MD5 | cut -f1 -d' '
 }
 
+# func <str>
+decodeBase64Str() {
+	echo "$1" | jq -Rrc '@base64d'
+	#echo "$1" | base64 --decode
+}
+
 # return: $OS $ARCH
 getSysinfo() {
 	case "$OSTYPE" in

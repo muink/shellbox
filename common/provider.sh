@@ -20,13 +20,13 @@ urlencode() {
 # func <url>
 urldecode_params() {
 	[ -z "$1" ] && echo '{}' && return 0
-	echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {$key: $val}' | jq -cs 'add // {}'
+	echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {$key: $val}' | jq -sc 'add // {}'
 }
 
 # func <obj>
 urlencode_params() {
 	isEmpty "$1" && return 0
-	echo "$1" | jq -r '. | length as $count | keys_unsorted as $keys | map(.) as $vals | 0 | while(. < $count; .+1) | $keys[.] + "=" + ($vals[.]|tostring)' | tr -d '\r' | tr '\n' '&' | sed 's|&$||'
+	echo "$1" | jq '. | length as $count | keys_unsorted as $keys | map(.) as $vals | 0 | while(. < $count; .+1) | $keys[.] + "=" + ($vals[.]|tostring)' | jq -src 'join("&")'
 }
 
 # func <type> <str>
@@ -193,6 +193,47 @@ parse_uri() {
 			fi
 		;;
 		ss)
+			# https://shadowsocks.org/doc/sip002.html
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+
+			config="$(echo '{}' | jq -c --args \
+				'.type="shadowsocks" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber)' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$(jsonSelect url '.href')" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+			)"
+			local ss_method ss_passwd
+			if ! $(isEmpty "$(jsonSelect url '.username')") && ! isEmpty "$(jsonSelect url '.password')"; then
+				ss_method="$(jsonSelect url '.username')"
+				ss_passwd="$(urldecode "$(jsonSelect url '.password')" )"
+			elif ! isEmpty "$(jsonSelect url '.username')"; then
+				local ss_userinfo="\"$(decodeBase64Str "$(urldecode "$(jsonSelect url '.username')" )" )\""
+				ss_method="$(jsonSelect ss_userinfo 'split(":")|.[0]')"
+				ss_passwd="$(jsonSelect ss_userinfo 'split(":")|.[1]')"
+			fi
+			config="$(echo "$config" | jq -c --args \
+				'.method=$ARGS.positional[0] |
+				.password=$ARGS.positional[1]' \
+				"$ss_method" \
+				"$ss_passwd" \
+			)"
+			if ! isEmpty "$(jsonSelect url '.searchParams.plugin')"; then
+				local ss_pluginfo ss_plugin ss_plugin_opts
+				ss_pluginfo="\"$(urldecode "$(jsonSelect url '.searchParams.plugin')" )\""
+				ss_plugin="$(jsonSelect ss_pluginfo 'split(";")|.[0]')"
+				[ "$ss_plugin" = "simple-obfs" ] && ss_plugin="obfs-local"
+				ss_plugin_opts="$(jsonSelect ss_pluginfo 'split(";")|.[1:]|join(";")')"
+				config="$(echo "$config" | jq -c --args \
+					'.plugin=$ARGS.positional[0] |
+					.plugin_opts=$ARGS.positional[1]' \
+					"$ss_plugin" \
+					"$ss_plugin_opts" \
+				)"
+			fi
 		;;
 		trojan)
 		;;

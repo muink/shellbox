@@ -49,6 +49,7 @@ else
 	MD5='md5sum'
 fi
 depCheck || { pause; exit; }
+SBFEATURES="$(sing-box version | grep '^Tags:')"
 
 
 # Menu

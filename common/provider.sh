@@ -34,6 +34,9 @@ validation() {
 	[ -n "$1" ] && { local type="$1"; } || { err "validation: No type specified.\n"; return 1; }
 	[ -n "$2" ] && { local str="$2"; } || { err "validation: String is empty.\n"; return 1; }
 	case "$type" in
+		features)
+			echo "$SBFEATURES" | grep -q "\b$str\b" || return 1
+		;;
 		host)
 			validation hostname "$str" || validation ipaddr4 "$str" || validation ipaddr6 "$str" && return 0
 			return 1
@@ -151,7 +154,7 @@ parse_uri() {
 	case "$type" in
 		http|https)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="http" |
@@ -162,13 +165,16 @@ parse_uri() {
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 			)"
+			# username password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
 				config="$(echo "$config" | jq -c --args '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" )"
 				isEmpty "$(jsonSelect url '.password')" || \
 					config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
 			fi
+			# path
 			isEmpty "$(jsonSelect url '.path')" || \
 				config="$(echo "$config" | jq -c --args '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^／||')" )"
+			# tls
 			[ "$type" = "https" ] && \
 				config="$(echo "$config" | jq -c '.tls.enabled=true')"
 		;;
@@ -178,7 +184,7 @@ parse_uri() {
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="socks" |
@@ -189,7 +195,9 @@ parse_uri() {
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 			)"
+			# version
 			config="$(echo "$config" | jq -c --args '.version=$ARGS.positional[0]' "$(echo "$type" | $SED -En 's,^socks(4a?|5h?)?$,\1,;s|^5h$|5|;s|^$|5|;p')" )"
+			# username password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
 				config="$(echo "$config" | jq -c --args '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" )"
 				isEmpty "$(jsonSelect url '.password')" || \
@@ -199,7 +207,7 @@ parse_uri() {
 		ss)
 			# https://shadowsocks.org/doc/sip002.html
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			config="$(echo '{}' | jq -c --args \
 				'.type="shadowsocks" |
@@ -210,6 +218,7 @@ parse_uri() {
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 			)"
+			# method password
 			local ss_method ss_passwd
 			if ! $(isEmpty "$(jsonSelect url '.username')") && ! isEmpty "$(jsonSelect url '.password')"; then
 				ss_method="$(jsonSelect url '.username')"
@@ -225,6 +234,7 @@ parse_uri() {
 				"$ss_method" \
 				"$ss_passwd" \
 			)"
+			# plugin plugin_opts
 			if ! isEmpty "$(jsonSelect url '.searchParams.plugin')"; then
 				local ss_pluginfo ss_plugin ss_plugin_opts
 				ss_pluginfo="\"$(urldecode "$(jsonSelect url '.searchParams.plugin')" )\""
@@ -242,7 +252,7 @@ parse_uri() {
 		trojan)
 			# https://p4gefau1t.github.io/trojan-go/developer/url/
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: URI '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			config="$(echo '{}' | jq -c --args \
@@ -257,8 +267,10 @@ parse_uri() {
 				"$(jsonSelect url '.port')" \
 				"$(urldecode "$(jsonSelect url '.username')" )" \
 			)"
+			# tls
 			isEmpty "$(jsonSelect params '.sni')" || \
 				config="$(echo "$config" | jq -c --args '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )" )"
+			# transport
 			local trojan_transport_type="$(jsonSelect params '.type')"
 			if ! isEmpty "$trojan_transport_type" && [ "$trojan_transport_type" != "tcp" ]; then
 				config="$(echo "$config" | jq -c --args '.transport.type=$ARGS.positional[0]' "$trojan_transport_type" )"
@@ -289,6 +301,31 @@ parse_uri() {
 			fi
 		;;
 		tuic)
+			# https://github.com/daeuniverse/dae/discussions/182
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			params="$(jsonSelect url '.searchParams')"
+
+			if ! validation features 'with_quic'; then
+				warn "parse_uri: Skipping unsupported TUIC node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+				return 1
+			fi
+
+			config="$(echo '{}' | jq -c --args \
+				'.type="tuic" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.uuid=$ARGS.positional[3] |
+				.tls.enabled=true' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+				"$(jsonSelect url '.username')" \
+			)"
+			# password
+			isEmpty "$(jsonSelect url '.password')" || \
+				config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
 		;;
 		vless)
 		;;
@@ -297,7 +334,7 @@ parse_uri() {
 		wireguard)
 		;;
 		*)
-			warn "parse_uri: URI '$uri' is not supported.\n"
+			warn "parse_uri: node '$uri' is not supported.\n"
 			return 1
 		;;
 	esac

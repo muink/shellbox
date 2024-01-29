@@ -78,7 +78,7 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 # func <url>
 parseURL() {
 	isEmpty "$1" && return 1
-	local services='{ "http": 80, "https": 443 }' obj='{}' url="$1"
+	local services='{"http":80,"https":443,"hysteria2":443,"hy2":443}' obj='{}' url="$1"
 	local protocol userinfo username password host port fpath path search hash
 
 	obj="$(echo "$obj" | jq -c --args '.href=$ARGS.positional[0]' "$url" )"
@@ -178,8 +178,93 @@ parse_uri() {
 				jsonSet config '.tls.enabled=true'
 		;;
 		hysteria)
+			# https://v1.hysteria.network/docs/uri-scheme/
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			params="$(jsonSelect url '.searchParams')"
+
+			if ! validation features 'with_quic' || [ "$(jsonSelect params '.protocol')" != "udp" ]; then
+				if validation features 'with_quic'; then
+					warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
+				else
+					warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+				fi
+				return 1
+			fi
+
+			jsonSet config \
+				'.type="hysteria" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.up_mbps=($ARGS.positional[3]|tonumber) |
+				.down_mbps=($ARGS.positional[4]|tonumber) |
+				.tls.enabled=true' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+				"$(jsonSelect params '.upmbps')" \
+				"$(jsonSelect params '.downmbps')"
+			# auth_str
+			isEmpty "$(jsonSelect params '.auth')" || \
+				jsonSet config '.auth_str=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.auth')" )"
+			# obfs
+			isEmpty "$(jsonSelect params '.obfsParam')" || \
+				jsonSet config '.obfs=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.obfsParam')" )"
+			# tls
+			isEmpty "$(jsonSelect params '.peer')" || \
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.peer')" )"
+			isEmpty "$(jsonSelect params '.insecure')" || \
+				jsonSet config \
+					'. as $config |
+					$ARGS.positional[0]|(. == "1" or . == "true") as $data |
+					$config |
+					.tls.insecure=$data' \
+					"$(jsonSelect params '.insecure')"
+			isEmpty "$(jsonSelect params '.alpn')" || \
+				jsonSet config '.tls.alpn=$ARGS.positional[0]' "$(jsonSelect params '.alpn')"
 		;;
 		hysteria2|hy2)
+			# https://v2.hysteria.network/docs/developers/URI-Scheme/
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			params="$(jsonSelect url '.searchParams')"
+
+			if ! validation features 'with_quic'; then
+				warn "parse_uri: Skipping unsupported hysteria2 node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+				return 1
+			fi
+
+			jsonSet config \
+				'.type="hysteria2" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.tls.enabled=true' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')"
+			# password
+			if ! isEmpty "$(jsonSelect url '.username')"; then
+				isEmpty "$(jsonSelect url '.password')" && \
+					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" || \
+					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username'):$(jsonSelect url '.password')" )"
+			fi
+			# obfs
+			isEmpty "$(jsonSelect params '.obfs')" || \
+				jsonSet config '.obfs.type=$ARGS.positional[0]' "$(jsonSelect params '.obfs')"
+			isEmpty "$(jsonSelect params '.["obfs-password"]')" || \
+				jsonSet config '.obfs.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.["obfs-password"]')" )"
+			# tls
+			isEmpty "$(jsonSelect params '.sni')" || \
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
+			isEmpty "$(jsonSelect params '.insecure')" || \
+				jsonSet config \
+					'. as $config |
+					$ARGS.positional[0]|(. == "1") as $data |
+					$config |
+					.tls.insecure=$data' \
+					"$(jsonSelect params '.insecure')"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
@@ -342,7 +427,7 @@ parse_uri() {
 		wireguard)
 		;;
 		*)
-			warn "parse_uri: node '$uri' is not supported.\n"
+			warn "parse_uri: Skipping unsupported node '$uri'.\n"
 			return 1
 		;;
 	esac

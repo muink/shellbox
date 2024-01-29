@@ -217,13 +217,13 @@ parse_uri() {
 				"$(jsonSelect url '.port')"
 			# method password
 			local ss_method ss_passwd
-			if ! $(isEmpty "$(jsonSelect url '.username')") && ! isEmpty "$(jsonSelect url '.password')"; then
-				ss_method="$(jsonSelect url '.username')"
-				ss_passwd="$(urldecode "$(jsonSelect url '.password')" )"
-			elif ! isEmpty "$(jsonSelect url '.username')"; then
+			if isEmpty "$(jsonSelect url '.password')"; then
 				local ss_userinfo="\"$(decodeBase64Str "$(urldecode "$(jsonSelect url '.username')" )" )\""
 				ss_method="$(jsonSelect ss_userinfo 'split(":")|.[0]')"
 				ss_passwd="$(jsonSelect ss_userinfo 'split(":")|.[1]')"
+			else
+				ss_method="$(jsonSelect url '.username')"
+				ss_passwd="$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 			jsonSet config \
 				'.method=$ARGS.positional[0] |

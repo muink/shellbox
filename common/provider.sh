@@ -147,7 +147,7 @@ buildURL() {
 
 # func <var> <uri>
 parse_uri() {
-	local config url params
+	local config='{}' url params
 	[ -n "$1" ] && eval "$1=''" || return 1
 	local uri="$2" type="${2%%:*}"
 
@@ -156,27 +156,26 @@ parse_uri() {
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
-			config="$(echo '{}' | jq -c --args \
+			jsonSet config \
 				'.type="http" |
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber)' \
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-			)"
+				"$(jsonSelect url '.port')"
 			# username password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
-				config="$(echo "$config" | jq -c --args '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" )"
+				jsonSet config '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )"
 				isEmpty "$(jsonSelect url '.password')" || \
-					config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
+					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 			# path
 			isEmpty "$(jsonSelect url '.path')" || \
-				config="$(echo "$config" | jq -c --args '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^／||')" )"
+				jsonSet config '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^／||')"
 			# tls
 			[ "$type" = "https" ] && \
-				config="$(echo "$config" | jq -c '.tls.enabled=true')"
+				jsonSet config '.tls.enabled=true'
 		;;
 		hysteria)
 		;;
@@ -186,22 +185,21 @@ parse_uri() {
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
-			config="$(echo '{}' | jq -c --args \
+			jsonSet config \
 				'.type="socks" |
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber)' \
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.version=$ARGS.positional[3]' \
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
-			)"
-			# version
-			config="$(echo "$config" | jq -c --args '.version=$ARGS.positional[0]' "$(echo "$type" | $SED -En 's,^socks(4a?|5h?)?$,\1,;s|^5h$|5|;s|^$|5|;p')" )"
+				"$(echo "$type" | $SED -En 's,^socks(4a?|5h?)?$,\1,;s|^5h$|5|;s|^$|5|;p')"
 			# username password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
-				config="$(echo "$config" | jq -c --args '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" )"
+				jsonSet config '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )"
 				isEmpty "$(jsonSelect url '.password')" || \
-					config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
+					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 		;;
 		ss)
@@ -209,15 +207,14 @@ parse_uri() {
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
-			config="$(echo '{}' | jq -c --args \
+			jsonSet config \
 				'.type="shadowsocks" |
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber)' \
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-			)"
+				"$(jsonSelect url '.port')"
 			# method password
 			local ss_method ss_passwd
 			if ! $(isEmpty "$(jsonSelect url '.username')") && ! isEmpty "$(jsonSelect url '.password')"; then
@@ -228,12 +225,11 @@ parse_uri() {
 				ss_method="$(jsonSelect ss_userinfo 'split(":")|.[0]')"
 				ss_passwd="$(jsonSelect ss_userinfo 'split(":")|.[1]')"
 			fi
-			config="$(echo "$config" | jq -c --args \
+			jsonSet config \
 				'.method=$ARGS.positional[0] |
 				.password=$ARGS.positional[1]' \
 				"$ss_method" \
-				"$ss_passwd" \
-			)"
+				"$ss_passwd"
 			# plugin plugin_opts
 			if ! isEmpty "$(jsonSelect url '.searchParams.plugin')"; then
 				local ss_pluginfo ss_plugin ss_plugin_opts
@@ -241,12 +237,11 @@ parse_uri() {
 				ss_plugin="$(jsonSelect ss_pluginfo 'split(";")|.[0]')"
 				[ "$ss_plugin" = "simple-obfs" ] && ss_plugin="obfs-local"
 				ss_plugin_opts="$(jsonSelect ss_pluginfo 'split(";")|.[1:]|join(";")')"
-				config="$(echo "$config" | jq -c --args \
+				jsonSet config \
 					'.plugin=$ARGS.positional[0] |
 					.plugin_opts=$ARGS.positional[1]' \
 					"$ss_plugin" \
-					"$ss_plugin_opts" \
-				)"
+					"$ss_plugin_opts"
 			fi
 		;;
 		trojan)
@@ -255,7 +250,7 @@ parse_uri() {
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
-			config="$(echo '{}' | jq -c --args \
+			jsonSet config \
 				'.type="trojan" |
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
@@ -265,35 +260,33 @@ parse_uri() {
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
-				"$(urldecode "$(jsonSelect url '.username')" )" \
-			)"
+				"$(urldecode "$(jsonSelect url '.username')" )"
 			# tls
 			isEmpty "$(jsonSelect params '.sni')" || \
-				config="$(echo "$config" | jq -c --args '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )" )"
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
 			# transport
 			local trojan_transport_type="$(jsonSelect params '.type')"
 			if ! isEmpty "$trojan_transport_type" && [ "$trojan_transport_type" != "tcp" ]; then
-				config="$(echo "$config" | jq -c --args '.transport.type=$ARGS.positional[0]' "$trojan_transport_type" )"
+				jsonSet config '.transport.type=$ARGS.positional[0]' "$trojan_transport_type"
 				case "$trojan_transport_type" in
 					grpc)
 						isEmpty "$(jsonSelect params '.serviceName')" || \
-							config="$(echo "$config" | jq -c --args '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )" )"
+							jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 					;;
 					ws)
 						if ! isEmpty "$(jsonSelect params '.path')"; then
 							local trojan_transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
 							if echo "$trojan_transport_depath" | grep -qE "\?ed="; then
-								config="$(echo "$config" | jq -c --args \
+								jsonSet config \
 									'. as $config |
 									$ARGS.positional[0]|split("?ed=") as $data |
 									$config |
 									.transport.early_data_header_name="Sec-WebSocket-Protocol" |
 									.transport.max_early_data=($data[1]|tonumber) |
 									.transport.path="/"+$data[0]' \
-									"${trojan_transport_depath#/}" \
-								)"
+									"${trojan_transport_depath#/}"
 							else
-								config="$(echo "$config" | jq -c --args '.transport.path="/"+$ARGS.positional[0]' "${trojan_transport_depath#/}" )"
+								jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${trojan_transport_depath#/}"
 							fi
 						fi
 					;;
@@ -311,7 +304,7 @@ parse_uri() {
 				return 1
 			fi
 
-			config="$(echo '{}' | jq -c --args \
+			jsonSet config \
 				'.type="tuic" |
 				.tag=$ARGS.positional[0] |
 				.server=$ARGS.positional[1] |
@@ -321,28 +314,26 @@ parse_uri() {
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
-				"$(jsonSelect url '.username')" \
-			)"
+				"$(jsonSelect url '.username')"
 			# password
 			isEmpty "$(jsonSelect url '.password')" || \
-				config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
+				jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			# congestion_control
 			isEmpty "$(jsonSelect params '.congestion_control')" || \
-				config="$(echo "$config" | jq -c --args '.congestion_control=$ARGS.positional[0]' "$(jsonSelect params '.congestion_control')" )"
+				jsonSet config '.congestion_control=$ARGS.positional[0]' "$(jsonSelect params '.congestion_control')"
 			# udp_relay_mode
 			isEmpty "$(jsonSelect params '.udp_relay_mode')" || \
-				config="$(echo "$config" | jq -c --args '.udp_relay_mode=$ARGS.positional[0]' "$(jsonSelect params '.udp_relay_mode')" )"
+				jsonSet config '.udp_relay_mode=$ARGS.positional[0]' "$(jsonSelect params '.udp_relay_mode')"
 			# tls
 			isEmpty "$(jsonSelect params '.sni')" || \
-				config="$(echo "$config" | jq -c --args '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )" )"
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
 			isEmpty "$(jsonSelect params '.alpn')" || \
-				config="$(echo "$config" | jq -c --args \
+				jsonSet config \
 					'. as $config |
 					$ARGS.positional[0]|split(",") as $data |
 					$config |
 					.tls.alpn=$data' \
-					"$(urldecode "$(jsonSelect params '.alpn')" )" \
-				)"
+					"$(urldecode "$(jsonSelect params '.alpn')" )"
 		;;
 		vless)
 		;;
@@ -358,7 +349,7 @@ parse_uri() {
 
 	if ! isEmpty "$config"; then
 		isEmpty "$(jsonSelect config '.server')" || \
-			config="$(echo "$config" | jq -c --args '.server=$ARGS.positional[0]' "$(jsonSelect config '.server' | tr -d '[]')" )"
+			jsonSet config '.server=$ARGS.positional[0]' "$(jsonSelect config '.server' | tr -d '[]')"
 	fi
 
 	eval "$1=\"\$config\""

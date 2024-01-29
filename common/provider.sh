@@ -326,6 +326,23 @@ parse_uri() {
 			# password
 			isEmpty "$(jsonSelect url '.password')" || \
 				config="$(echo "$config" | jq -c --args '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )" )"
+			# congestion_control
+			isEmpty "$(jsonSelect params '.congestion_control')" || \
+				config="$(echo "$config" | jq -c --args '.congestion_control=$ARGS.positional[0]' "$(jsonSelect params '.congestion_control')" )"
+			# udp_relay_mode
+			isEmpty "$(jsonSelect params '.udp_relay_mode')" || \
+				config="$(echo "$config" | jq -c --args '.udp_relay_mode=$ARGS.positional[0]' "$(jsonSelect params '.udp_relay_mode')" )"
+			# tls
+			isEmpty "$(jsonSelect params '.sni')" || \
+				config="$(echo "$config" | jq -c --args '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )" )"
+			isEmpty "$(jsonSelect params '.alpn')" || \
+				config="$(echo "$config" | jq -c --args \
+					'. as $config |
+					$ARGS.positional[0]|split(",") as $data |
+					$config |
+					.tls.alpn=$data' \
+					"$(urldecode "$(jsonSelect params '.alpn')" )" \
+				)"
 		;;
 		vless)
 		;;

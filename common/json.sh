@@ -42,5 +42,12 @@ isEmpty() {
 
 # func <objvar> [filters]
 jsonSelect() {
-	eval "echo \"\$$1\" | jq -c '$2' | jq -rc './/\"\"'"
+	eval "echo \"\$$1\" | jq -c '${2:-.}' | jq -rc './/\"\"'"
+}
+
+# func <objvar> <filters> [args]
+jsonSet() {
+	local cfg="$1" filters="$2"
+	shift 2
+	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --args '$filters' \"\$@\" )\""
 }

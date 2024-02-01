@@ -49,5 +49,18 @@ jsonSelect() {
 jsonSet() {
 	local cfg="$1" filters="$2"
 	shift 2
-	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --args '$filters' \"\$@\" )\""
+	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --args '${filters:-.}' \"\$@\" )\""
+}
+
+# func <objvar> [inputvar1] [inputvar2] ...
+jsonMerge() {
+	local cfg="$1"; shift
+	local inputs="$(echo "$@" | $SED 's|\s|" "\$|g;s|^|"\$|;s|$|"|')"
+	eval "$cfg=\"\$( echo $inputs | jq -nc 'reduce inputs as \$i (null; .+\$i)' )\""
+}
+
+# func <objvar> [file1] [file1] ...
+jsonMergeFiles() {
+	local cfg="$1"; shift
+	eval "$cfg=\"\$( jq -nc 'reduce inputs as \$i (null; .+\$i)' \"\$@\" )\""
 }

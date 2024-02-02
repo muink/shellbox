@@ -183,13 +183,14 @@ parse_uri() {
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
-			if ! validation features 'with_quic' || [ "$(jsonSelect params '.protocol')" != "udp" ]; then
+			if ! validation features 'with_quic' || [ -n "$(jsonSelect params '.protocol')" -a "$(jsonSelect params '.protocol')" != "udp" ]; then
 				if validation features 'with_quic'; then
 					warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
+					return 1
 				else
 					warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+					return 1
 				fi
-				return 1
 			fi
 
 			jsonSet config \
@@ -421,6 +422,39 @@ parse_uri() {
 					"$(urldecode "$(jsonSelect params '.alpn')" )"
 		;;
 		vless)
+			# https://github.com/XTLS/Xray-core/discussions/716
+			url="$(parseURL "$uri")"
+			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			params="$(jsonSelect url '.searchParams')"
+
+			if [ "$(jsonSelect params '.type')" = "kcp" ]; then
+				warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
+				return 1
+			elif [ "$(jsonSelect params '.type')" = "quic" ]; then
+				if validation features 'with_quic'; then
+					if [ -n "$(jsonSelect params '.quicSecurity')" -a "$(jsonSelect params '.quicSecurity')" != "none" ]; then
+						warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
+						return 1
+					fi
+				else
+					warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+					return 1
+				fi
+			fi
+
+			jsonSet config \
+				'.type="vless" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.uuid=$ARGS.positional[3]' \
+				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
+				"$(jsonSelect url '.host')" \
+				"$(jsonSelect url '.port')" \
+				"$(jsonSelect url '.username')"
+			# flow
+			# tls
+			# transport
 		;;
 		vmess)
 		;;

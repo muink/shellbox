@@ -339,18 +339,18 @@ parse_uri() {
 			isEmpty "$(jsonSelect params '.sni')" || \
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
 			# transport
-			local trojan_transport_type="$(jsonSelect params '.type')"
-			if ! isEmpty "$trojan_transport_type" && [ "$trojan_transport_type" != "tcp" ]; then
-				jsonSet config '.transport.type=$ARGS.positional[0]' "$trojan_transport_type"
-				case "$trojan_transport_type" in
+			local transport_type="$(jsonSelect params '.type')"
+			if ! isEmpty "$transport_type" && [ "$transport_type" != "tcp" ]; then
+				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
+				case "$transport_type" in
 					grpc)
 						isEmpty "$(jsonSelect params '.serviceName')" || \
 							jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 					;;
 					ws)
 						if ! isEmpty "$(jsonSelect params '.path')"; then
-							local trojan_transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
-							if echo "$trojan_transport_depath" | grep -qE "\?ed="; then
+							local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
+							if echo "$transport_depath" | grep -qE "\?ed="; then
 								jsonSet config \
 									'. as $config |
 									$ARGS.positional[0]|split("?ed=") as $data |
@@ -358,9 +358,9 @@ parse_uri() {
 									.transport.early_data_header_name="Sec-WebSocket-Protocol" |
 									.transport.max_early_data=($data[1]|tonumber) |
 									.transport.path="/"+$data[0]' \
-									"${trojan_transport_depath#/}"
+									"${transport_depath#/}"
 							else
-								jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${trojan_transport_depath#/}"
+								jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${transport_depath#/}"
 							fi
 						fi
 					;;
@@ -435,14 +435,14 @@ parse_uri() {
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
 				"$(urldecode "$(jsonSelect url '.username')" )"
-			local vless_tls_type="$(jsonSelect params '.security')"
+			local tls_type="$(jsonSelect params '.security')"
 			# flow
-			if echo "$vless_tls_type" | grep -qE "^(tls|reality)$"; then
+			if echo "$tls_type" | grep -qE "^(tls|reality)$"; then
 				isEmpty "$(jsonSelect params '.flow')" || \
 					jsonSet config '.flow=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.flow')" )"
 			fi
 			# tls
-			echo "$vless_tls_type" | grep -qE "^(tls|xtls|reality)$" && \
+			echo "$tls_type" | grep -qE "^(tls|xtls|reality)$" && \
 				jsonSet config '.tls.enabled=true'
 			isEmpty "$(jsonSelect params '.sni')" || \
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
@@ -453,7 +453,7 @@ parse_uri() {
 					jsonSet config '.tls.utls.enabled=true|.tls.utls.fingerprint=$ARGS.positional[0]' "$(jsonSelect params '.fp')"
 			fi
 			# reality
-			if [ "$vless_tls_type" = "reality" ]; then
+			if [ "$tls_type" = "reality" ]; then
 				jsonSet config '.reality.enabled=true'
 				isEmpty "$(jsonSelect params '.pbk')" || \
 					jsonSet config '.reality.public_key=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.pbk')" )"
@@ -461,17 +461,17 @@ parse_uri() {
 					jsonSet config '.reality.short_id=$ARGS.positional[0]' "$(jsonSelect params '.sid')"
 			fi
 			# transport
-			local vless_transport_type="$(jsonSelect params '.type')"
-			if ! isEmpty "$vless_transport_type" && [ "$vless_transport_type" != "tcp" ]; then
-				jsonSet config '.transport.type=$ARGS.positional[0]' "$vless_transport_type"
+			local transport_type="$(jsonSelect params '.type')"
+			if ! isEmpty "$transport_type" && [ "$transport_type" != "tcp" ]; then
+				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
 			fi
-			case "$vless_transport_type" in
+			case "$transport_type" in
 				grpc)
 					isEmpty "$(jsonSelect params '.serviceName')" || \
 						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 				;;
 				tcp|http)
-					if [ "$vless_transport_type" = "http" -o "$(jsonSelect params '.headerType')" = "http" ]; then
+					if [ "$transport_type" = "http" -o "$(jsonSelect params '.headerType')" = "http" ]; then
 						isEmpty "$(jsonSelect params '.host')" || \
 							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.host')" )"
 						isEmpty "$(jsonSelect params '.path')" || \
@@ -484,8 +484,8 @@ parse_uri() {
 							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
 					fi
 					if ! isEmpty "$(jsonSelect params '.path')"; then
-						local vless_transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
-						if echo "$vless_transport_depath" | grep -qE "\?ed="; then
+						local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
+						if echo "$transport_depath" | grep -qE "\?ed="; then
 							jsonSet config \
 								'. as $config |
 								$ARGS.positional[0]|split("?ed=") as $data |
@@ -493,9 +493,9 @@ parse_uri() {
 								.transport.early_data_header_name="Sec-WebSocket-Protocol" |
 								.transport.max_early_data=($data[1]|tonumber) |
 								.transport.path="/"+$data[0]' \
-								"${vless_transport_depath#/}"
+								"${transport_depath#/}"
 						else
-							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${vless_transport_depath#/}"
+							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${transport_depath#/}"
 						fi
 					fi
 				;;
@@ -557,17 +557,17 @@ parse_uri() {
 			isEmpty "$(jsonSelect url '.alpn')" || \
 				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.alpn')"
 			# transport
-			local vmess_transport_type="$(jsonSelect url '.net')"
-			if ! isEmpty "$vmess_transport_type" && [ "$vmess_transport_type" != "tcp" ]; then
-				jsonSet config '.transport.type=$ARGS.positional[0]' "$vmess_transport_type"
+			local transport_type="$(jsonSelect url '.net')"
+			if ! isEmpty "$transport_type" && [ "$transport_type" != "tcp" ]; then
+				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
 			fi
-			case "$vmess_transport_type" in
+			case "$transport_type" in
 				grpc)
 					isEmpty "$(jsonSelect url '.path')" || \
 						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(jsonSelect url '.path')"
 				;;
 				tcp|h2)
-					if [ "$vmess_transport_type" = "h2" -o "$(jsonSelect url '.type')" = "http" ]; then
+					if [ "$transport_type" = "h2" -o "$(jsonSelect url '.type')" = "http" ]; then
 						jsonSet config '.transport.type="http"'
 						isEmpty "$(jsonSelect url '.host')" || \
 							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.host')"
@@ -581,8 +581,8 @@ parse_uri() {
 							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.host')" )"
 					fi
 					if ! isEmpty "$(jsonSelect url '.path')"; then
-						local vmess_transport_depath="$(jsonSelect url '.path')"
-						if echo "$vmess_transport_depath" | grep -qE "\?ed="; then
+						local transport_depath="$(jsonSelect url '.path')"
+						if echo "$transport_depath" | grep -qE "\?ed="; then
 							jsonSet config \
 								'. as $config |
 								$ARGS.positional[0]|split("?ed=") as $data |
@@ -590,9 +590,9 @@ parse_uri() {
 								.transport.early_data_header_name="Sec-WebSocket-Protocol" |
 								.transport.max_early_data=($data[1]|tonumber) |
 								.transport.path="/"+$data[0]' \
-								"${vmess_transport_depath#/}"
+								"${transport_depath#/}"
 						else
-							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${vmess_transport_depath#/}"
+							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${transport_depath#/}"
 						fi
 					fi
 				;;

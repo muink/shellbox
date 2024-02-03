@@ -482,7 +482,7 @@ parse_uri() {
 						isEmpty "$(jsonSelect params '.host')" || \
 							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.host')" )"
 						isEmpty "$(jsonSelect params '.path')" || \
-							jsonSet config '.transport.path=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.path')" )"
+							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.path')" | $SED 's|^/||' )"
 					fi
 				;;
 				ws)
@@ -577,7 +577,7 @@ parse_uri() {
 						isEmpty "$(jsonSelect url '.host')" || \
 							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.host')"
 						isEmpty "$(jsonSelect url '.path')" || \
-							jsonSet config '.transport.path=$ARGS.positional[0]' "$(jsonSelect url '.path')"
+							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^/||')"
 					fi
 				;;
 				ws)
@@ -600,8 +600,6 @@ parse_uri() {
 					fi
 				;;
 			esac
-		;;
-		wireguard)
 		;;
 		*)
 			warn "parse_uri: Skipping unsupported node '$uri'.\n"

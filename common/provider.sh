@@ -106,7 +106,7 @@ parseURL() {
 	# path    /^(\/[^\?\#]*)/
 	# search / URI query    /^\?([^#]+)/
 	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|fpath='\1';path='\2';search='\4'|p")"
-	[ -n "$fpath" ] && path="／$path"
+	[ -n "$fpath" ] && fpath=1
 
 	obj="$(echo "$obj" | jq -c --args \
 		'.protocol=$ARGS.positional[0] |
@@ -114,13 +114,15 @@ parseURL() {
 		.port=($ARGS.positional[2]|tonumber) |
 		.username=$ARGS.positional[3] |
 		.password=$ARGS.positional[4] |
-		.path=$ARGS.positional[5] |
-		.hash=$ARGS.positional[6]' \
+		.fpath=($ARGS.positional[5]|(. == "1")) |
+		.path=$ARGS.positional[6] |
+		.hash=$ARGS.positional[7]' \
 		"$protocol" \
 		"$host" \
 		"$port" \
 		"$username" \
 		"$password" \
+		"$fpath" \
 		"$path" \
 		"$hash" \
 	)"
@@ -138,7 +140,9 @@ buildURL() {
 	scheme="$(jsonSelect obj '.protocol')"
 	userinfo="$(jsonSelect obj '.username + if (.password|length) > 0 then ":" + .password else "" end')"
 	hostport="$(jsonSelect obj '.host + ":" + (.port|tostring)')"
-	path="$(jsonSelect obj '.path' | $SED 's|^／|/|')"
+	[ -n "$(jsonSelect obj '.fpath')" ] && {
+		path="/$(jsonSelect obj '.path')"
+	}
 	query="$(urlencode_params "$(jsonSelect obj '.searchParams')" )"
 	fragment="$(jsonSelect obj '.hash')"
 
@@ -171,8 +175,8 @@ parse_uri() {
 					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 			# path
-			isEmpty "$(jsonSelect url '.path')" || \
-				jsonSet config '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^／||')"
+			isEmpty "$(jsonSelect url '.fpath')" || \
+				jsonSet config '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path')"
 			# tls
 			[ "$type" = "https" ] && \
 				jsonSet config '.tls.enabled=true'

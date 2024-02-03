@@ -502,6 +502,101 @@ parse_uri() {
 			esac
 		;;
 		vmess)
+			# https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
+			decodeBase64Str "${uri#*://}" >/dev/null 2>&1 && \
+				url="$(decodeBase64Str "${uri#*://}")" || {
+					warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+					return 1
+				}
+			[ "$(jsonSelect url '.v')" != "2" ] && {
+				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				return 1
+			}
+			if [ "$(jsonSelect url '.net')" = "kcp" ];then
+				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				return 1
+			elif [ "$(jsonSelect url '.net')" = "quic" ];then
+				if validation features 'with_quic'; then
+					if [ -n "$(jsonSelect url '.type')" -a "$(jsonSelect url '.type')" != "none" ] || [ -n "$(jsonSelect url '.path')" ]; then
+						warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+						return 1
+					fi
+				else
+					warn "parse_uri: Skipping unsupported VMess node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+					return 1
+				fi
+			fi
+
+			jsonSet config \
+				'.type="vmess" |
+				.tag=$ARGS.positional[0] |
+				.server=$ARGS.positional[1] |
+				.server_port=($ARGS.positional[2]|tonumber) |
+				.uuid=$ARGS.positional[3]' \
+				"$(isEmpty "$(jsonSelect url '.ps')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.ps')" )" \
+				"$(jsonSelect url '.add')" \
+				"$(jsonSelect url '.port')" \
+				"$(jsonSelect url '.id')"
+			# security
+			isEmpty "$(jsonSelect url '.scy')" && \
+				jsonSet config '.security="auto"' || \
+				jsonSet config '.security=$ARGS.positional[0]' "$(jsonSelect url '.scy')"
+			# alter_id
+			isEmpty "$(jsonSelect url '.aid')" || \
+				jsonSet config '.alter_id=($ARGS.positional[0]|tonumber)' "$(jsonSelect url '.aid')"
+			# global_padding
+			jsonSet config '.global_padding=true'
+			# tls
+			[ "$(jsonSelect url '.tls')" = "tls" ] && \
+				jsonSet config '.tls.enabled=true'
+			if ! isEmpty "$(jsonSelect url '.sni')"; then
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(jsonSelect url '.sni')"
+			elif ! isEmpty "$(jsonSelect url '.host')"; then
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(jsonSelect url '.host')"
+			fi
+			isEmpty "$(jsonSelect url '.alpn')" || \
+				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.alpn')"
+			# transport
+			local vmess_transport_type="$(jsonSelect url '.net')"
+			if ! isEmpty "$vmess_transport_type" && [ "$vmess_transport_type" != "tcp" ]; then
+				jsonSet config '.transport.type=$ARGS.positional[0]' "$vmess_transport_type"
+			fi
+			case "$vmess_transport_type" in
+				grpc)
+					isEmpty "$(jsonSelect url '.path')" || \
+						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(jsonSelect url '.path')"
+				;;
+				tcp|h2)
+					if [ "$vmess_transport_type" = "h2" -o "$(jsonSelect url '.type')" = "http" ]; then
+						jsonSet config '.transport.type="http"'
+						isEmpty "$(jsonSelect url '.host')" || \
+							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.host')"
+						isEmpty "$(jsonSelect url '.path')" || \
+							jsonSet config '.transport.path=$ARGS.positional[0]' "$(jsonSelect url '.path')"
+					fi
+				;;
+				ws)
+					if [ "$(jsonSelect config '.tls.enabled')" != "true" ]; then
+						isEmpty "$(jsonSelect url '.host')" || \
+							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.host')" )"
+					fi
+					if ! isEmpty "$(jsonSelect url '.path')"; then
+						local vmess_transport_depath="$(jsonSelect url '.path')"
+						if echo "$vmess_transport_depath" | grep -qE "\?ed="; then
+							jsonSet config \
+								'. as $config |
+								$ARGS.positional[0]|split("?ed=") as $data |
+								$config |
+								.transport.early_data_header_name="Sec-WebSocket-Protocol" |
+								.transport.max_early_data=($data[1]|tonumber) |
+								.transport.path="/"+$data[0]' \
+								"${vmess_transport_depath#/}"
+						else
+							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${vmess_transport_depath#/}"
+						fi
+					fi
+				;;
+			esac
 		;;
 		wireguard)
 		;;

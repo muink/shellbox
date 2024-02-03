@@ -286,6 +286,7 @@ parse_uri() {
 			# https://shadowsocks.org/doc/sip002.html
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			params="$(jsonSelect url '.searchParams')"
 
 			jsonSet config \
 				'.type="shadowsocks" |
@@ -312,14 +313,14 @@ parse_uri() {
 					"$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 			# plugin plugin_opts
-			if ! isEmpty "$(jsonSelect url '.searchParams.plugin')"; then
+			if ! isEmpty "$(jsonSelect params '.plugin')"; then
 				jsonSet config \
 					'. as $config |
 					$ARGS.positional[0]|split(";") as $data |
 					$config |
 					.plugin=($data[0]|if (. == "simple-obfs") then "obfs-local" else . end) |
 					.plugin_opts=($data[1:]|join(";"))' \
-					"$(urldecode "$(jsonSelect url '.searchParams.plugin')" )"
+					"$(urldecode "$(jsonSelect params '.plugin')" )"
 			fi
 		;;
 		trojan)
@@ -352,6 +353,8 @@ parse_uri() {
 							jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 					;;
 					ws)
+						isEmpty "$(jsonSelect params '.host')" || \
+							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
 						if ! isEmpty "$(jsonSelect params '.path')"; then
 							local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
 							if echo "$transport_depath" | grep -qE "\?ed="; then
@@ -483,10 +486,8 @@ parse_uri() {
 					fi
 				;;
 				ws)
-					if [ "$(jsonSelect config '.tls.enabled')" != "true" ]; then
-						isEmpty "$(jsonSelect params '.host')" || \
-							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
-					fi
+					isEmpty "$(jsonSelect params '.host')" || \
+						jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
 					if ! isEmpty "$(jsonSelect params '.path')"; then
 						local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
 						if echo "$transport_depath" | grep -qE "\?ed="; then
@@ -537,7 +538,7 @@ parse_uri() {
 				.server=$ARGS.positional[1] |
 				.server_port=($ARGS.positional[2]|tonumber) |
 				.uuid=$ARGS.positional[3]' \
-				"$(isEmpty "$(jsonSelect url '.ps')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.ps')" )" \
+				"$(isEmpty "$(jsonSelect url '.ps')" && calcStringMD5 "$uri" || jsonSelect url '.ps' )" \
 				"$(jsonSelect url '.add')" \
 				"$(jsonSelect url '.port')" \
 				"$(jsonSelect url '.id')"
@@ -580,10 +581,8 @@ parse_uri() {
 					fi
 				;;
 				ws)
-					if [ "$(jsonSelect config '.tls.enabled')" != "true" ]; then
-						isEmpty "$(jsonSelect url '.host')" || \
-							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.host')" )"
-					fi
+					isEmpty "$(jsonSelect url '.host')" || \
+						jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(jsonSelect url '.host')"
 					if ! isEmpty "$(jsonSelect url '.path')"; then
 						local transport_depath="$(jsonSelect url '.path')"
 						if echo "$transport_depath" | grep -qE "\?ed="; then

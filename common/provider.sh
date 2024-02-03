@@ -216,12 +216,7 @@ parse_uri() {
 			isEmpty "$(jsonSelect params '.peer')" || \
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.peer')" )"
 			isEmpty "$(jsonSelect params '.insecure')" || \
-				jsonSet config \
-					'. as $config |
-					$ARGS.positional[0]|(. == "1" or . == "true") as $data |
-					$config |
-					.tls.insecure=$data' \
-					"$(jsonSelect params '.insecure')"
+				jsonSet config '.tls.insecure=($ARGS.positional[0]|(. == "1" or . == "true"))' "$(jsonSelect params '.insecure')"
 			isEmpty "$(jsonSelect params '.alpn')" || \
 				jsonSet config '.tls.alpn=$ARGS.positional[0]' "$(jsonSelect params '.alpn')"
 		;;
@@ -260,12 +255,7 @@ parse_uri() {
 			isEmpty "$(jsonSelect params '.sni')" || \
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
 			isEmpty "$(jsonSelect params '.insecure')" || \
-				jsonSet config \
-					'. as $config |
-					$ARGS.positional[0]|(. == "1") as $data |
-					$config |
-					.tls.insecure=$data' \
-					"$(jsonSelect params '.insecure')"
+				jsonSet config '.tls.insecure=($ARGS.positional[0]|(. == "1"))' "$(jsonSelect params '.insecure')"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
@@ -302,32 +292,30 @@ parse_uri() {
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')"
 			# method password
-			local ss_method ss_passwd
 			if isEmpty "$(jsonSelect url '.password')"; then
-				local ss_userinfo="\"$(decodeBase64Str "$(urldecode "$(jsonSelect url '.username')" )" )\""
-				ss_method="$(jsonSelect ss_userinfo 'split(":")|.[0]')"
-				ss_passwd="$(jsonSelect ss_userinfo 'split(":")|.[1]')"
+				jsonSet config \
+					'. as $config |
+					$ARGS.positional[0]|@base64d|split(":") as $data |
+					$config |
+					.method=$data[0] |
+					.password=$data[1]' \
+					"$(urldecode "$(jsonSelect url '.username')" )"
 			else
-				ss_method="$(jsonSelect url '.username')"
-				ss_passwd="$(urldecode "$(jsonSelect url '.password')" )"
+				jsonSet config \
+					'.method=$ARGS.positional[0] |
+					.password=$ARGS.positional[1]' \
+					"$(jsonSelect url '.username')" \
+					"$(urldecode "$(jsonSelect url '.password')" )"
 			fi
-			jsonSet config \
-				'.method=$ARGS.positional[0] |
-				.password=$ARGS.positional[1]' \
-				"$ss_method" \
-				"$ss_passwd"
 			# plugin plugin_opts
 			if ! isEmpty "$(jsonSelect url '.searchParams.plugin')"; then
-				local ss_pluginfo ss_plugin ss_plugin_opts
-				ss_pluginfo="\"$(urldecode "$(jsonSelect url '.searchParams.plugin')" )\""
-				ss_plugin="$(jsonSelect ss_pluginfo 'split(";")|.[0]')"
-				[ "$ss_plugin" = "simple-obfs" ] && ss_plugin="obfs-local"
-				ss_plugin_opts="$(jsonSelect ss_pluginfo 'split(";")|.[1:]|join(";")')"
 				jsonSet config \
-					'.plugin=$ARGS.positional[0] |
-					.plugin_opts=$ARGS.positional[1]' \
-					"$ss_plugin" \
-					"$ss_plugin_opts"
+					'. as $config |
+					$ARGS.positional[0]|split(";") as $data |
+					$config |
+					.plugin=($data[0]|if (. == "simple-obfs") then "obfs-local" else . end) |
+					.plugin_opts=($data[1:]|join(";"))' \
+					"$(urldecode "$(jsonSelect url '.searchParams.plugin')" )"
 			fi
 		;;
 		trojan)
@@ -414,12 +402,7 @@ parse_uri() {
 			isEmpty "$(jsonSelect params '.sni')" || \
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
 			isEmpty "$(jsonSelect params '.alpn')" || \
-				jsonSet config \
-					'. as $config |
-					$ARGS.positional[0]|split(",") as $data |
-					$config |
-					.tls.alpn=$data' \
-					"$(urldecode "$(jsonSelect params '.alpn')" )"
+				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.alpn')" )"
 		;;
 		vless)
 			# https://github.com/XTLS/Xray-core/discussions/716
@@ -451,10 +434,72 @@ parse_uri() {
 				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
 				"$(jsonSelect url '.host')" \
 				"$(jsonSelect url '.port')" \
-				"$(jsonSelect url '.username')"
+				"$(urldecode "$(jsonSelect url '.username')" )"
+			local vless_tls_type="$(jsonSelect params '.security')"
 			# flow
+			if echo "$vless_tls_type" | grep -qE "^(tls|reality)$"; then
+				isEmpty "$(jsonSelect params '.flow')" || \
+					jsonSet config '.flow=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.flow')" )"
+			fi
 			# tls
+			echo "$vless_tls_type" | grep -qE "^(tls|xtls|reality)$" && \
+				jsonSet config '.tls.enabled=true'
+			isEmpty "$(jsonSelect params '.sni')" || \
+				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
+			isEmpty "$(jsonSelect params '.alpn')" || \
+				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.alpn')" )"
+			if validation features 'with_utls'; then
+				isEmpty "$(jsonSelect params '.fp')" || \
+					jsonSet config '.tls.utls.enabled=true|.tls.utls.fingerprint=$ARGS.positional[0]' "$(jsonSelect params '.fp')"
+			fi
+			# reality
+			if [ "$vless_tls_type" = "reality" ]; then
+				jsonSet config '.reality.enabled=true'
+				isEmpty "$(jsonSelect params '.pbk')" || \
+					jsonSet config '.reality.public_key=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.pbk')" )"
+				isEmpty "$(jsonSelect params '.sid')" || \
+					jsonSet config '.reality.short_id=$ARGS.positional[0]' "$(jsonSelect params '.sid')"
+			fi
 			# transport
+			local vless_transport_type="$(jsonSelect params '.type')"
+			if ! isEmpty "$vless_transport_type" && [ "$vless_transport_type" != "tcp" ]; then
+				jsonSet config '.transport.type=$ARGS.positional[0]' "$vless_transport_type"
+			fi
+			case "$vless_transport_type" in
+				grpc)
+					isEmpty "$(jsonSelect params '.serviceName')" || \
+						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
+				;;
+				tcp|http)
+					if [ "$vless_transport_type" = "http" -o "$(jsonSelect params '.headerType')" = "http" ]; then
+						isEmpty "$(jsonSelect params '.host')" || \
+							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.host')" )"
+						isEmpty "$(jsonSelect params '.path')" || \
+							jsonSet config '.transport.path=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.path')" )"
+					fi
+				;;
+				ws)
+					if [ "$(jsonSelect config '.tls.enabled')" != "true" ]; then
+						isEmpty "$(jsonSelect params '.host')" || \
+							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
+					fi
+					if ! isEmpty "$(jsonSelect params '.path')"; then
+						local vless_transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
+						if echo "$vless_transport_depath" | grep -qE "\?ed="; then
+							jsonSet config \
+								'. as $config |
+								$ARGS.positional[0]|split("?ed=") as $data |
+								$config |
+								.transport.early_data_header_name="Sec-WebSocket-Protocol" |
+								.transport.max_early_data=($data[1]|tonumber) |
+								.transport.path="/"+$data[0]' \
+								"${vless_transport_depath#/}"
+						else
+							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${vless_transport_depath#/}"
+						fi
+					fi
+				;;
+			esac
 		;;
 		vmess)
 		;;

@@ -153,7 +153,7 @@ buildURL() {
 parse_uri() {
 	local config='{}' url params
 	[ -n "$1" ] && eval "$1=''" || return 1
-	local uri="$2" type="${2%%:*}"
+	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*):(//)?||')"
 
 	case "$type" in
 		http|https)
@@ -283,6 +283,14 @@ parse_uri() {
 			fi
 		;;
 		ss)
+			# Shadowrocket format
+			local ss_suri=null
+			jsonSet ss_suri '$ARGS.positional[0]|split("#")' "$body"
+			if [ "$(jsonSelect ss_suri 'length')" -le 2 ]; then
+				decodeBase64Str "$(jsonSelect ss_suri '.[0]')" >/dev/null 2>&1 && \
+					uri="$type://$(decodeBase64Str "$(jsonSelect ss_suri '.[0]')")$(isEmpty "$(jsonSelect ss_suri '.[1]')" || { echo -n \#; jsonSelect ss_suri '.[1]'; })"
+			fi
+
 			# https://shadowsocks.org/doc/sip002.html
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
@@ -507,9 +515,15 @@ parse_uri() {
 			esac
 		;;
 		vmess)
+			# Shadowrocket format
+			if echo "$uri" | grep -q "&"; then
+				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				return 1
+			fi
+
 			# https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
-			decodeBase64Str "${uri#*://}" >/dev/null 2>&1 && \
-				url="$(decodeBase64Str "${uri#*://}")" || {
+			decodeBase64Str "$body" >/dev/null 2>&1 && \
+				url="$(decodeBase64Str "$body")" || {
 					warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 					return 1
 				}

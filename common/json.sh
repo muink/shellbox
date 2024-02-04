@@ -52,6 +52,13 @@ jsonSet() {
 	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --args '${filters:-.}' \"\$@\" )\""
 }
 
+# func <objvar> <filters> [jsonargs]
+jsonSetjson() {
+	local cfg="$1" filters="$2"
+	shift 2
+	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --jsonargs '${filters:-.}' \"\$@\" )\""
+}
+
 # func <objvar> [inputvar1] [inputvar2] ...
 jsonMerge() {
 	local cfg="$1"; shift

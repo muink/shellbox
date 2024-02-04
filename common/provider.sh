@@ -628,3 +628,34 @@ parse_uri() {
 
 	eval "$1=\"\$config\""
 }
+
+# func <var> <subscription_url>
+parse_subscription() {
+	local node nodes node_result='[]' url
+	[ "$#" -lt 2 ] && return 1 || { eval "$1=''"; url="$2"; }
+
+	nodes="$(decodeBase64Str "$(downloadTo "$url")" | tr -d '\r' | $SED 's|\s|_|g')"
+	[ -n "$nodes" ] || {
+		warn "parse_subscription: Unable to resolve resource from subscription '$url'.\n"
+		return 1
+	}
+
+	local time=$(date -u +%s) count=0 cfg
+	for node in $nodes; do
+		[ -n "$node" ] && parse_uri cfg "$node"
+		isEmpty "$cfg" && continue
+
+		jsonSetjson node_result ".[$count]=\$ARGS.positional[0]" "$cfg"
+		let count++
+	done
+	time=$[ $(date -u +%s) - $time ]
+	yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
+	yeah "Total time: $[ $time / 60 ]m$[ $time % 60 ]s.\n"
+
+	if isEmpty "$node_result"; then
+		warn "parse_subscription: Failed to update subscriptions: no valid node found.\n"
+		return 1
+	fi
+
+	eval "$1=\"\$node_result\""
+}

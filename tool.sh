@@ -16,8 +16,6 @@ LOGO="\
 By: Anya Lin$(printf "%$[ 40 - ${#VERSION} ]s" v$VERSION)
 ================================================="
 
-DEPENDENCIES="curl unzip tar md5sum jq"
-
 # Main program
 MAINDIR="$(cd $(dirname $0); pwd)"
 BINADIR="$MAINDIR/bin"
@@ -43,11 +41,14 @@ getSysinfo || { pause; exit; }
 echo System: $OS-$ARCH
 if [ "$OS" = "darwin" ]; then
 	SED=gsed
-	MD5='md5 -q'
+	MD5=gmd5sum
+	DATE=gdate
 else
 	SED=sed
-	MD5='md5sum'
+	MD5=md5sum
+	DATE=date
 fi
+DEPENDENCIES="curl unzip tar jq $SED $MD5 $DATE"
 depCheck || { pause; exit; }
 SBFEATURES="$(sing-box version | grep '^Tags:')"
 

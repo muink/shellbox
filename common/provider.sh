@@ -640,7 +640,7 @@ parse_subscription() {
 		return 1
 	}
 
-	local time=$(date -u +%s) count=0 cfg
+	local time=$($DATE -u +%s%3N) count=0 cfg
 	for node in $nodes; do
 		[ -n "$node" ] && parse_uri cfg "$node"
 		isEmpty "$cfg" && continue
@@ -648,9 +648,9 @@ parse_subscription() {
 		jsonSetjson node_result ".[$count]=\$ARGS.positional[0]" "$cfg"
 		let count++
 	done
-	time=$[ $(date -u +%s) - $time ]
+	time=$[ $($DATE -u +%s%3N) - $time ]
 	yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
-	yeah "Total time: $[ $time / 60 ]m$[ $time % 60 ]s.\n"
+	yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
 
 	if isEmpty "$node_result"; then
 		warn "parse_subscription: Failed to update subscriptions: no valid node found.\n"

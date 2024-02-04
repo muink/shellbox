@@ -108,8 +108,8 @@ depCheck() {
 			if [ "$errcount" -gt 0 ]; then
 				for dep in $misss; do
 					case "$dep" in
-						md5sum)
-							let errcount--
+						gsed|gmd5sum|gdate)
+							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n" 0
 						;;
 						*)
 							err "Missing dependencies: $dep, Please install manually using the homebrew.\n" 0

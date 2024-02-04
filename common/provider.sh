@@ -287,8 +287,11 @@ parse_uri() {
 			local ss_suri=null
 			jsonSet ss_suri '$ARGS.positional[0]|split("#")' "$body"
 			if [ "$(jsonSelect ss_suri 'length')" -le 2 ]; then
-				decodeBase64Str "$(jsonSelect ss_suri '.[0]')" >/dev/null 2>&1 &&
-					uri="$type://$(decodeBase64Str "$(jsonSelect ss_suri '.[0]')")$(isEmpty "$(jsonSelect ss_suri '.[1]')" || { echo -n \#; jsonSelect ss_suri '.[1]'; })"
+				local ss_sbody="$(decodeBase64Str "$(jsonSelect ss_suri '.[0]')" 2>/dev/null)"
+				[ -n "$ss_sbody" ] && {
+					local ss_lable="$(jsonSelect ss_suri '.[1]')"
+					uri="$type://$ss_sbody$(isEmpty "$ss_lable" || echo -n "#$ss_lable")"
+				}
 			fi
 
 			# https://shadowsocks.org/doc/sip002.html
@@ -522,19 +525,19 @@ parse_uri() {
 			fi
 
 			# https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
-			decodeBase64Str "$body" >/dev/null 2>&1 &&
-				url="$(decodeBase64Str "$body")" || {
-					warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
-					return 1
-				}
-			[ "$(jsonSelect url '.v')" != "2" ] && {
+			url="$(decodeBase64Str "$body" 2>/dev/null)"
+			[ -n "$url" ] || {
 				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			}
-			if [ "$(jsonSelect url '.net')" = "kcp" ];then
+			[ "$(jsonSelect url '.v')" = "2" ] || {
 				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
-			elif [ "$(jsonSelect url '.net')" = "quic" ];then
+			}
+			if [ "$(jsonSelect url '.net')" = "kcp" ]; then
+				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				return 1
+			elif [ "$(jsonSelect url '.net')" = "quic" ]; then
 				if validation features 'with_quic'; then
 					if [ -n "$(jsonSelect url '.type')" -a "$(jsonSelect url '.type')" != "none" ] || [ -n "$(jsonSelect url '.path')" ]; then
 						warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
@@ -634,7 +637,7 @@ parse_subscription() {
 	local node nodes node_result='[]' url
 	[ "$#" -lt 2 ] && return 1 || { eval "$1=''"; url="$2"; }
 
-	nodes="$(decodeBase64Str "$(downloadTo "$url")" | tr -d '\r' | $SED 's|\s|%20|g')"
+	nodes="$(decodeBase64Str "$(downloadTo "$url")" 2>/dev/null | tr -d '\r' | $SED 's|\s|%20|g')"
 	[ -n "$nodes" ] || {
 		warn "parse_subscription: Unable to resolve resource from subscription '$url'.\n"
 		return 1

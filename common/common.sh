@@ -34,7 +34,7 @@ pause() {
 
 # func <url> [target]
 downloadTo() {
-	curl --connect-timeout 10 --retry 3 -sSL "$1" ${2:+-o "$2"}
+	curl --progress-bar --connect-timeout 10 --retry 3 -L "$1" ${2:+-o "$2"}
 }
 
 # func <str>

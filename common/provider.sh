@@ -171,14 +171,14 @@ parse_uri() {
 			# username password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
 				jsonSet config '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )"
-				isEmpty "$(jsonSelect url '.password')" || \
+				isEmpty "$(jsonSelect url '.password')" ||
 					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 			# path
-			isEmpty "$(jsonSelect url '.fpath')" || \
+			isEmpty "$(jsonSelect url '.fpath')" ||
 				jsonSet config '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path')"
 			# tls
-			[ "$type" = "https" ] && \
+			[ "$type" = "https" ] &&
 				jsonSet config '.tls.enabled=true'
 		;;
 		hysteria)
@@ -211,17 +211,17 @@ parse_uri() {
 				"$(jsonSelect params '.upmbps')" \
 				"$(jsonSelect params '.downmbps')"
 			# auth_str
-			isEmpty "$(jsonSelect params '.auth')" || \
+			isEmpty "$(jsonSelect params '.auth')" ||
 				jsonSet config '.auth_str=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.auth')" )"
 			# obfs
-			isEmpty "$(jsonSelect params '.obfsParam')" || \
+			isEmpty "$(jsonSelect params '.obfsParam')" ||
 				jsonSet config '.obfs=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.obfsParam')" )"
 			# tls
-			isEmpty "$(jsonSelect params '.peer')" || \
+			isEmpty "$(jsonSelect params '.peer')" ||
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.peer')" )"
-			isEmpty "$(jsonSelect params '.insecure')" || \
+			isEmpty "$(jsonSelect params '.insecure')" ||
 				jsonSet config '.tls.insecure=($ARGS.positional[0]|(. == "1" or . == "true"))' "$(jsonSelect params '.insecure')"
-			isEmpty "$(jsonSelect params '.alpn')" || \
+			isEmpty "$(jsonSelect params '.alpn')" ||
 				jsonSet config '.tls.alpn=$ARGS.positional[0]' "$(jsonSelect params '.alpn')"
 		;;
 		hysteria2|hy2)
@@ -246,19 +246,19 @@ parse_uri() {
 				"$(jsonSelect url '.port')"
 			# password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
-				isEmpty "$(jsonSelect url '.password')" && \
-					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" || \
+				isEmpty "$(jsonSelect url '.password')" &&
+					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" ||
 					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username'):$(jsonSelect url '.password')" )"
 			fi
 			# obfs
-			isEmpty "$(jsonSelect params '.obfs')" || \
+			isEmpty "$(jsonSelect params '.obfs')" ||
 				jsonSet config '.obfs.type=$ARGS.positional[0]' "$(jsonSelect params '.obfs')"
-			isEmpty "$(jsonSelect params '.["obfs-password"]')" || \
+			isEmpty "$(jsonSelect params '.["obfs-password"]')" ||
 				jsonSet config '.obfs.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.["obfs-password"]')" )"
 			# tls
-			isEmpty "$(jsonSelect params '.sni')" || \
+			isEmpty "$(jsonSelect params '.sni')" ||
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			isEmpty "$(jsonSelect params '.insecure')" || \
+			isEmpty "$(jsonSelect params '.insecure')" ||
 				jsonSet config '.tls.insecure=($ARGS.positional[0]|(. == "1"))' "$(jsonSelect params '.insecure')"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
@@ -278,7 +278,7 @@ parse_uri() {
 			# username password
 			if ! isEmpty "$(jsonSelect url '.username')"; then
 				jsonSet config '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )"
-				isEmpty "$(jsonSelect url '.password')" || \
+				isEmpty "$(jsonSelect url '.password')" ||
 					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			fi
 		;;
@@ -287,7 +287,7 @@ parse_uri() {
 			local ss_suri=null
 			jsonSet ss_suri '$ARGS.positional[0]|split("#")' "$body"
 			if [ "$(jsonSelect ss_suri 'length')" -le 2 ]; then
-				decodeBase64Str "$(jsonSelect ss_suri '.[0]')" >/dev/null 2>&1 && \
+				decodeBase64Str "$(jsonSelect ss_suri '.[0]')" >/dev/null 2>&1 &&
 					uri="$type://$(decodeBase64Str "$(jsonSelect ss_suri '.[0]')")$(isEmpty "$(jsonSelect ss_suri '.[1]')" || { echo -n \#; jsonSelect ss_suri '.[1]'; })"
 			fi
 
@@ -349,7 +349,7 @@ parse_uri() {
 				"$(jsonSelect url '.port')" \
 				"$(urldecode "$(jsonSelect url '.username')" )"
 			# tls
-			isEmpty "$(jsonSelect params '.sni')" || \
+			isEmpty "$(jsonSelect params '.sni')" ||
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
 			# transport
 			local transport_type="$(jsonSelect params '.type')"
@@ -357,11 +357,11 @@ parse_uri() {
 				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
 				case "$transport_type" in
 					grpc)
-						isEmpty "$(jsonSelect params '.serviceName')" || \
+						isEmpty "$(jsonSelect params '.serviceName')" ||
 							jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 					;;
 					ws)
-						isEmpty "$(jsonSelect params '.host')" || \
+						isEmpty "$(jsonSelect params '.host')" ||
 							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
 						if ! isEmpty "$(jsonSelect params '.path')"; then
 							local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
@@ -405,18 +405,18 @@ parse_uri() {
 				"$(jsonSelect url '.port')" \
 				"$(jsonSelect url '.username')"
 			# password
-			isEmpty "$(jsonSelect url '.password')" || \
+			isEmpty "$(jsonSelect url '.password')" ||
 				jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
 			# congestion_control
-			isEmpty "$(jsonSelect params '.congestion_control')" || \
+			isEmpty "$(jsonSelect params '.congestion_control')" ||
 				jsonSet config '.congestion_control=$ARGS.positional[0]' "$(jsonSelect params '.congestion_control')"
 			# udp_relay_mode
-			isEmpty "$(jsonSelect params '.udp_relay_mode')" || \
+			isEmpty "$(jsonSelect params '.udp_relay_mode')" ||
 				jsonSet config '.udp_relay_mode=$ARGS.positional[0]' "$(jsonSelect params '.udp_relay_mode')"
 			# tls
-			isEmpty "$(jsonSelect params '.sni')" || \
+			isEmpty "$(jsonSelect params '.sni')" ||
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			isEmpty "$(jsonSelect params '.alpn')" || \
+			isEmpty "$(jsonSelect params '.alpn')" ||
 				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.alpn')" )"
 		;;
 		vless)
@@ -453,26 +453,26 @@ parse_uri() {
 			local tls_type="$(jsonSelect params '.security')"
 			# flow
 			if echo "$tls_type" | grep -qE "^(tls|reality)$"; then
-				isEmpty "$(jsonSelect params '.flow')" || \
+				isEmpty "$(jsonSelect params '.flow')" ||
 					jsonSet config '.flow=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.flow')" )"
 			fi
 			# tls
-			echo "$tls_type" | grep -qE "^(tls|xtls|reality)$" && \
+			echo "$tls_type" | grep -qE "^(tls|xtls|reality)$" &&
 				jsonSet config '.tls.enabled=true'
-			isEmpty "$(jsonSelect params '.sni')" || \
+			isEmpty "$(jsonSelect params '.sni')" ||
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			isEmpty "$(jsonSelect params '.alpn')" || \
+			isEmpty "$(jsonSelect params '.alpn')" ||
 				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.alpn')" )"
 			if validation features 'with_utls'; then
-				isEmpty "$(jsonSelect params '.fp')" || \
+				isEmpty "$(jsonSelect params '.fp')" ||
 					jsonSet config '.tls.utls.enabled=true|.tls.utls.fingerprint=$ARGS.positional[0]' "$(jsonSelect params '.fp')"
 			fi
 			# reality
 			if [ "$tls_type" = "reality" ]; then
 				jsonSet config '.reality.enabled=true'
-				isEmpty "$(jsonSelect params '.pbk')" || \
+				isEmpty "$(jsonSelect params '.pbk')" ||
 					jsonSet config '.reality.public_key=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.pbk')" )"
-				isEmpty "$(jsonSelect params '.sid')" || \
+				isEmpty "$(jsonSelect params '.sid')" ||
 					jsonSet config '.reality.short_id=$ARGS.positional[0]' "$(jsonSelect params '.sid')"
 			fi
 			# transport
@@ -482,19 +482,19 @@ parse_uri() {
 			fi
 			case "$transport_type" in
 				grpc)
-					isEmpty "$(jsonSelect params '.serviceName')" || \
+					isEmpty "$(jsonSelect params '.serviceName')" ||
 						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 				;;
 				tcp|http)
 					if [ "$transport_type" = "http" -o "$(jsonSelect params '.headerType')" = "http" ]; then
-						isEmpty "$(jsonSelect params '.host')" || \
+						isEmpty "$(jsonSelect params '.host')" ||
 							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.host')" )"
-						isEmpty "$(jsonSelect params '.path')" || \
+						isEmpty "$(jsonSelect params '.path')" ||
 							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.path')" | $SED 's|^/||' )"
 					fi
 				;;
 				ws)
-					isEmpty "$(jsonSelect params '.host')" || \
+					isEmpty "$(jsonSelect params '.host')" ||
 						jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
 					if ! isEmpty "$(jsonSelect params '.path')"; then
 						local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
@@ -522,7 +522,7 @@ parse_uri() {
 			fi
 
 			# https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
-			decodeBase64Str "$body" >/dev/null 2>&1 && \
+			decodeBase64Str "$body" >/dev/null 2>&1 &&
 				url="$(decodeBase64Str "$body")" || {
 					warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 					return 1
@@ -557,23 +557,23 @@ parse_uri() {
 				"$(jsonSelect url '.port')" \
 				"$(jsonSelect url '.id')"
 			# security
-			isEmpty "$(jsonSelect url '.scy')" && \
-				jsonSet config '.security="auto"' || \
+			isEmpty "$(jsonSelect url '.scy')" &&
+				jsonSet config '.security="auto"' ||
 				jsonSet config '.security=$ARGS.positional[0]' "$(jsonSelect url '.scy')"
 			# alter_id
-			isEmpty "$(jsonSelect url '.aid')" || \
+			isEmpty "$(jsonSelect url '.aid')" ||
 				jsonSet config '.alter_id=($ARGS.positional[0]|tonumber)' "$(jsonSelect url '.aid')"
 			# global_padding
 			jsonSet config '.global_padding=true'
 			# tls
-			[ "$(jsonSelect url '.tls')" = "tls" ] && \
+			[ "$(jsonSelect url '.tls')" = "tls" ] &&
 				jsonSet config '.tls.enabled=true'
 			if ! isEmpty "$(jsonSelect url '.sni')"; then
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(jsonSelect url '.sni')"
 			elif ! isEmpty "$(jsonSelect url '.host')"; then
 				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(jsonSelect url '.host')"
 			fi
-			isEmpty "$(jsonSelect url '.alpn')" || \
+			isEmpty "$(jsonSelect url '.alpn')" ||
 				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.alpn')"
 			# transport
 			local transport_type="$(jsonSelect url '.net')"
@@ -582,20 +582,20 @@ parse_uri() {
 			fi
 			case "$transport_type" in
 				grpc)
-					isEmpty "$(jsonSelect url '.path')" || \
+					isEmpty "$(jsonSelect url '.path')" ||
 						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(jsonSelect url '.path')"
 				;;
 				tcp|h2)
 					if [ "$transport_type" = "h2" -o "$(jsonSelect url '.type')" = "http" ]; then
 						jsonSet config '.transport.type="http"'
-						isEmpty "$(jsonSelect url '.host')" || \
+						isEmpty "$(jsonSelect url '.host')" ||
 							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.host')"
-						isEmpty "$(jsonSelect url '.path')" || \
+						isEmpty "$(jsonSelect url '.path')" ||
 							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^/||')"
 					fi
 				;;
 				ws)
-					isEmpty "$(jsonSelect url '.host')" || \
+					isEmpty "$(jsonSelect url '.host')" ||
 						jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(jsonSelect url '.host')"
 					if ! isEmpty "$(jsonSelect url '.path')"; then
 						local transport_depath="$(jsonSelect url '.path')"
@@ -622,7 +622,7 @@ parse_uri() {
 	esac
 
 	if ! isEmpty "$config"; then
-		isEmpty "$(jsonSelect config '.server')" || \
+		isEmpty "$(jsonSelect config '.server')" ||
 			jsonSet config '.server=$ARGS.positional[0]' "$(jsonSelect config '.server' | tr -d '[]')"
 	fi
 

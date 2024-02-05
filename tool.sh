@@ -41,11 +41,19 @@ export PATH="$BINADIR:$PATH"
 getSysinfo || { pause; exit; }
 echo System: $OS-$ARCH
 if [ "$OS" = "darwin" ]; then
+	SINGBOX=sing-box
 	SED=gsed
 	MD5=gmd5sum
 	DATE=gdate
 	GETOPT=ggetopt
+elif [ "$OS" = "windows" ]; then
+	SINGBOX=sing-box.exe
+	SED=sed.exe
+	MD5=md5sum.exe
+	DATE=date.exe
+	GETOPT=getopt.exe
 else
+	SINGBOX=sing-box
 	SED=sed
 	MD5=md5sum
 	DATE=date
@@ -53,7 +61,7 @@ else
 fi
 DEPENDENCIES="curl unzip tar jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }
-SBFEATURES="$(sing-box version | grep '^Tags:')"
+SBFEATURES="$($SINGBOX version | grep '^Tags:')"
 
 
 # Menu

@@ -166,7 +166,7 @@ checkVersion() {
 }
 
 checkCoreVersion() {
-	local cur="$(sing-box version 2>/dev/null | head -1 | awk '{print $3}')"
+	local cur="$($SINGBOX version 2>/dev/null | head -1 | awk '{print $3}')"
 	local new="$(github_getLatest sagernet sing-box | $SED 's|^v||')"
 	CORECURRVER="${cur:-null}"
 	CORENEWWVER="${new:-null}"

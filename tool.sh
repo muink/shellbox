@@ -21,11 +21,13 @@ MAINDIR="$(cd $(dirname $0); pwd)"
 BINADIR="$MAINDIR/bin"
 COMMDIR="$MAINDIR/common"
 MAINSET="$MAINDIR/settings.json"
-LOGFILE="$MAINDIR/shellbox.log"
+MAINLOG="$MAINDIR/shellbox.log"
 
 # sing-box
 WORKDIR="$MAINDIR/resources"
 CONFDIR="$WORKDIR/configs"
+LOGSDIR="$WORKDIR/logs"
+SUBSDIR="$WORKDIR/providers"
 TEMPDIR="$WORKDIR/templates"
 
 
@@ -33,13 +35,14 @@ export PATH="$BINADIR:$PATH"
 . "$COMMDIR/common.sh"
 . "$COMMDIR/json.sh"
 . "$COMMDIR/github.sh"
+. "$COMMDIR/provider.sh"
 
 
 # Init
 [ -d "$BINADIR" ] || mkdir -p "$BINADIR"
-[ -f "$MAINSET" ] || touch "$MAINSET"
+[ -f "$MAINSET" ] || echo '{}' > "$MAINSET"
+[ -f "$MAINLOG" ] && { [ $(wc -l "$MAINLOG" | awk '{print $1}') -gt 1000 ] && $SED -i "1,300d"; }
 getSysinfo || { pause; exit; }
-echo System: $OS-$ARCH
 if [ "$OS" = "darwin" ]; then
 	SINGBOX=sing-box
 	SED=gsed
@@ -59,7 +62,7 @@ else
 	DATE=date
 	GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar jq $SED $MD5 $DATE $GETOPT"
+DEPENDENCIES="curl unzip tar tee awk jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }
 SBFEATURES="$($SINGBOX version | grep '^Tags:')"
 
@@ -98,6 +101,7 @@ Options:\n\
 
 _version() {
 	local core="$($SINGBOX version 2>/dev/null | head -1 | awk '{print $3}')"
+	echo "System: $OS-$ARCH"
 	echo "App version: $VERSION"
 	echo "Core version: ${core:-null}"
 }
@@ -178,7 +182,7 @@ case "$MENUID" in
 		ShellBox:
 		            Current:   $VERSION
 		            Latest:    $NEWWVER
-		core:
+		Core:
 		            Current:   $CORECURRVER
 		            Latest:    $CORENEWWVER
 		=================================================

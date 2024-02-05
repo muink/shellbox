@@ -30,7 +30,7 @@ yeah() {
 
 # func <msg>
 logs() {
-	[ -n "$LOGFILE" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $1" >> "$LOGFILE"; return 0; }
+	[ -f "$MAINLOG" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $1" | tee -a "$MAINLOG"; return 0; }
 	echo -ne "[$($DATE --iso-8601="seconds")]: $1"
 }
 
@@ -145,7 +145,7 @@ depCheck() {
 						curl)
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n"
 						;;
-						unzip|tar|md5sum)
+						unzip|tar|tee|awk|sed.exe|md5sum.exe|date.exe|getopt.exe)
 							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n"
 						;;
 						jq)

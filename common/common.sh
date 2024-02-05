@@ -117,6 +117,14 @@ depCheck() {
 						gsed|gmd5sum|gdate)
 							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n"
 						;;
+						ggetopt)
+							if [ -x "$(brew --prefix)/opt/gnu-getopt/bin/getopt" ]; then
+								ln -s "$(brew --prefix)/opt/gnu-getopt/bin/getopt" "$(brew --prefix)/bin/ggetopt"
+								let errcount--
+							else
+								err "Missing dependencies: gnu-getopt, Please install manually using the homebrew.\n"
+							fi
+						;;
 						*)
 							err "Missing dependencies: $dep, Please install manually using the homebrew.\n"
 						;;

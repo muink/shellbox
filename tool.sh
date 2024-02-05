@@ -44,12 +44,14 @@ if [ "$OS" = "darwin" ]; then
 	SED=gsed
 	MD5=gmd5sum
 	DATE=gdate
+	GETOPT=ggetopt
 else
 	SED=sed
 	MD5=md5sum
 	DATE=date
+	GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar jq $SED $MD5 $DATE"
+DEPENDENCIES="curl unzip tar jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }
 SBFEATURES="$(sing-box version | grep '^Tags:')"
 

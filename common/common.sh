@@ -28,6 +28,12 @@ yeah() {
 	echo -ne "${CLR_GREEN}$1${CLR_RST}"
 }
 
+# func <msg>
+logs() {
+	[ -n "$LOGFILE" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $1" >> "$LOGFILE"; return 0; }
+	echo -ne "[$($DATE --iso-8601="seconds")]: $1"
+}
+
 pause() {
 	read -p "Press any key to continue..." -n1 -r
 }
@@ -101,7 +107,7 @@ depCheck() {
 	case "$OSTYPE" in
 		linux-gnu)
 			if [ "$errcount" -gt 0 ]; then
-				err "Missing dependencies: $misss\n\tPlease install manually using the package manager.\n" 0
+				err "Missing dependencies: $misss\n\tPlease install manually using the package manager.\n"
 			fi
 		;;
 		darwin*)
@@ -109,10 +115,10 @@ depCheck() {
 				for dep in $misss; do
 					case "$dep" in
 						gsed|gmd5sum|gdate)
-							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n" 0
+							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n"
 						;;
 						*)
-							err "Missing dependencies: $dep, Please install manually using the homebrew.\n" 0
+							err "Missing dependencies: $dep, Please install manually using the homebrew.\n"
 						;;
 					esac
 				done
@@ -120,7 +126,7 @@ depCheck() {
 		;;
 		cygwin)
 			if [ "$errcount" -gt 0 ]; then
-				err "Missing dependencies: $misss\n\tPlease install manually using the Cygwin setup.\n" 0
+				err "Missing dependencies: $misss\n\tPlease install manually using the Cygwin setup.\n"
 			fi
 		;;
 		msys)
@@ -129,14 +135,14 @@ depCheck() {
 				for dep in $misss; do
 					case "$dep" in
 						curl)
-							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n" 0
+							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n"
 						;;
 						unzip|tar|md5sum)
-							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n" 0
+							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n"
 						;;
 						jq)
 							downloadTo "https://github.com/jqlang/jq/releases/latest/download/jq-windows-amd64.exe" "$BINADIR/jq.exe"
-							command -v jq >/dev/null && let errcount-- || err "Please download \"https://github.com/jqlang/jq/releases/latest/download/jq-windows-amd64.exe\" and put to \"$BINADIR/jq.exe\"\n" 0
+							command -v jq >/dev/null && let errcount-- || err "Please download \"https://github.com/jqlang/jq/releases/latest/download/jq-windows-amd64.exe\" and put to \"$BINADIR/jq.exe\"\n"
 						;;
 					esac
 				done

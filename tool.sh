@@ -21,6 +21,7 @@ MAINDIR="$(cd $(dirname $0); pwd)"
 BINADIR="$MAINDIR/bin"
 COMMDIR="$MAINDIR/common"
 MAINSET="$MAINDIR/settings.json"
+LOGFILE="$MAINDIR/shellbox.log"
 
 # sing-box
 WORKDIR="$MAINDIR/resources"
@@ -74,6 +75,14 @@ echo -ne "Please select: [ ]\b\b"
 read -t 60 MENUID
 MENUID=${MENUID:-x}
 case "$MENUID" in
+	1)
+		clear
+		cat <<- EOF
+		$LOGO
+
+		EOF
+		pause
+	;;
 	2)
 		checkVersion
 		checkCoreVersion

@@ -634,7 +634,7 @@ parse_subscription() {
 	local node nodes node_result='[]' url
 	[ "$#" -lt 2 ] && return 1 || { eval "$1=''"; url="$2"; }
 
-	nodes="$(decodeBase64Str "$(downloadTo "$url")" | tr -d '\r' | $SED 's|\s|_|g')"
+	nodes="$(decodeBase64Str "$(downloadTo "$url")" | tr -d '\r' | $SED 's|\s|%20|g')"
 	[ -n "$nodes" ] || {
 		warn "parse_subscription: Unable to resolve resource from subscription '$url'.\n"
 		return 1

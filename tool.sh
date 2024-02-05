@@ -64,6 +64,78 @@ depCheck || { pause; exit; }
 SBFEATURES="$($SINGBOX version | grep '^Tags:')"
 
 
+# Getargs
+GETARGS=$($GETOPT -n $(basename $0) -o gVhu -l update,generate,version,help -- "$@")
+[ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
+eval set -- "$GETARGS"
+ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")
+# Duplicate options
+for ru in -h\|--help -V\|--version -g\|--generate -u\|--update; do
+	eval "echo \"\$ERROR\" | grep -qE \" ${ru%|*}[ .+]* ($ru)| ${ru#*|}[ .+]* ($ru)\"" && { err "Option '$ru' option is repeated\n"; exit; }
+done
+# Independent options
+for ru in -h\|--help -V\|--version; do
+	eval "echo \"\$ERROR\" | grep -qE \"^ ($ru) .+|.+ ($ru) .+|.+ ($ru) *\$\"" && { err "Option '$(echo "$ERROR" | sed -E "s,^.*($ru).*$,\1,")' cannot be used with other options\n"; exit; }
+done
+# Conflicting options
+
+
+# Subfunc
+_help() {
+printf "\n\
+Usage: $(basename $0) [OPTION]... \n\
+\n\
+  e.g. $(basename $0) -g          -- Rebuild configs\n\
+  e.g. $(basename $0) -V          -- Returns version\n\
+\n\
+Options:\n\
+  -g, --generate           -- Rebuild configs\n\
+  -u, --update             -- Update subscriptions\n\
+  -V, --version            -- Returns version\n\
+  -h, --help               -- Returns help info\n\
+\n"
+}
+
+_version() {
+	local core="$($SINGBOX version 2>/dev/null | head -1 | awk '{print $3}')"
+	echo "App version: $VERSION"
+	echo "Core version: ${core:-null}"
+}
+
+
+# Main
+if [ "$#" -gt 1 ]; then
+	while [ -n "$1" ]; do
+		case "$1" in
+			-h|--help)
+				_help
+				exit
+			;;
+			-V|--version)
+				_version
+				exit
+			;;
+			-g|--generate)
+				GENERATOR=true
+			;;
+			-u|--update)
+				UPDATESUBS=true
+			;;
+			--)
+				shift
+				break
+			;;
+		esac
+		shift
+	done
+	if [ -n "$UPDATESUBS" ]; then
+		pause
+	fi
+	if [ -n "$GENERATOR" ]; then
+		pause
+	fi
+	exit
+fi
 # Menu
 while :; do
 clear
@@ -72,9 +144,10 @@ $LOGO
                      [Menu]
 
         1. Rebuild configs
-        2. Check update
-        3. Upgrade shellbox
-        4. Upgrade core
+        2. Update subscriptions
+        3. Check update
+        4. Upgrade shellbox
+        5. Upgrade core
       ------------------------------
         x. Exit
 =================================================
@@ -94,6 +167,9 @@ case "$MENUID" in
 		pause
 	;;
 	2)
+		pause
+	;;
+	3)
 		checkVersion
 		checkCoreVersion
 		clear
@@ -109,7 +185,7 @@ case "$MENUID" in
 		EOF
 		pause
 	;;
-	3)
+	4)
 		checkVersion
 		clear
 		cat <<- EOF
@@ -133,7 +209,7 @@ case "$MENUID" in
 		pause
 		exit
 	;;
-	4)
+	5)
 		checkCoreVersion
 		clear
 		cat <<- EOF

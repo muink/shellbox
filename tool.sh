@@ -146,7 +146,7 @@ if [ "$#" -gt 1 ]; then
 		shift
 	done
 	if [ -n "$UPDATESUBS" ]; then
-		pause
+		updateProvider || exit 1
 	fi
 	if [ -n "$GENERATOR" ]; then
 		pause
@@ -184,6 +184,12 @@ case "$MENUID" in
 		pause
 	;;
 	2)
+		clear
+		cat <<- EOF
+		$LOGO
+
+		EOF
+		updateProvider || { pause; exit; }
 		pause
 	;;
 	3)

@@ -29,10 +29,12 @@ CONFDIR="$WORKDIR/configs"
 LOGSDIR="$WORKDIR/logs"
 SUBSDIR="$WORKDIR/providers"
 TEMPDIR="$WORKDIR/templates"
+DASHDIR="$WORKDIR/ui"
 
 
 export PATH="$BINADIR:$PATH"
 . "$COMMDIR/common.sh"
+. "$COMMDIR/config.sh"
 . "$COMMDIR/json.sh"
 . "$COMMDIR/github.sh"
 . "$COMMDIR/provider.sh"
@@ -42,6 +44,13 @@ export PATH="$BINADIR:$PATH"
 [ -d "$BINADIR" ] || mkdir -p "$BINADIR"
 [ -f "$MAINSET" ] || echo '{}' > "$MAINSET"
 [ -f "$MAINLOG" ] && { [ $(wc -l "$MAINLOG" | awk '{print $1}') -gt 1000 ] && $SED -i "1,300d"; }
+#
+[ -d "$CONFDIR" ] || mkdir -p "$CONFDIR"
+[ -d "$LOGSDIR" ] || mkdir -p "$LOGSDIR"
+[ -d "$SUBSDIR" ] || mkdir -p "$SUBSDIR"
+[ -d "$TEMPDIR" ] || mkdir -p "$TEMPDIR"
+[ -d "$DASHDIR" ] || mkdir -p "$DASHDIR"
+#
 getSysinfo || { pause; exit; }
 if [ "$OS" = "darwin" ]; then
 	SINGBOX=sing-box

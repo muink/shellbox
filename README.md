@@ -1,10 +1,10 @@
 <h1 align="center">
-<p style="width: 100%; font-family: monospace; white-space: pre">
+<pre>
  ___ _        _ _ ___        　
 / __| |_  ___| | | _ ) _____ __
 \__ \ ' \/ -_) | | _ \/ _ \ \ /
 |___/_||_\___|_|_|___/\___/_\_\
-</p>
+</pre>
 </h1>
 
 ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black)

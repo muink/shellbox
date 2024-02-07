@@ -38,6 +38,11 @@ pause() {
 	read -p "Press any key to continue..." -n1 -r
 }
 
+# func <url> [ua]
+wfetch() {
+	curl --user-agent "${2:-shellbox}" --connect-timeout 10 --retry 3 -sL "$1"
+}
+
 # func <url> [target]
 downloadTo() {
 	curl --progress-bar --connect-timeout 10 --retry 3 -L "$1" ${2:+-o "$2"}

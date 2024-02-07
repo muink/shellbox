@@ -7,10 +7,10 @@
 
 # func <user> <repo>
 github_getLatest() {
-	downloadTo "https://api.github.com/repos/$1/$2/releases/latest" | jq '.tag_name' -r
+	wfetch "https://api.github.com/repos/$1/$2/releases/latest" | jq '.tag_name' -r
 }
 
 # func <user> <repo>
 github_getVList() {
-	downloadTo "https://api.github.com/repos/$1/$2/releases" | jq '.[].tag_name?' -r | tr -d '\r'
+	wfetch "https://api.github.com/repos/$1/$2/releases" | jq '.[].tag_name?' -r | tr -d '\r'
 }

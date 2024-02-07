@@ -31,8 +31,8 @@ urlencode_params() {
 
 # func <type> <str>
 validation() {
-	[ -n "$1" ] && { local type="$1"; } || { err "validation: No type specified.\n"; return 1; }
-	[ -n "$2" ] && { local str="$2"; } || { err "validation: String is empty.\n"; return 1; }
+	[ -n "$1" ] && { local type="$1"; } || { logs err "validation: No type specified.\n"; return 1; }
+	[ -n "$2" ] && { local str="$2"; } || { logs err "validation: String is empty.\n"; return 1; }
 	case "$type" in
 		features)
 			echo "$SBFEATURES" | grep -q "\b$str\b" || return 1
@@ -69,7 +69,7 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 ([[:xdigit:]]{1,4}:){1,4}:((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2}))$" || return 1
 		;;
 		*)
-			err "validation: Invalid type '$type'.\n"
+			logs err "validation: Invalid type '$type'.\n"
 			return 1
 		;;
 	esac
@@ -158,7 +158,7 @@ parse_uri() {
 	case "$type" in
 		http|https)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			jsonSet config \
 				'.type="http" |
@@ -184,15 +184,15 @@ parse_uri() {
 		hysteria)
 			# https://v1.hysteria.network/docs/uri-scheme/
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			if ! validation features 'with_quic' || [ -n "$(jsonSelect params '.protocol')" -a "$(jsonSelect params '.protocol')" != "udp" ]; then
 				if validation features 'with_quic'; then
-					warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
+					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
 					return 1
 				else
-					warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
 					return 1
 				fi
 			fi
@@ -227,11 +227,11 @@ parse_uri() {
 		hysteria2|hy2)
 			# https://v2.hysteria.network/docs/developers/URI-Scheme/
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			if ! validation features 'with_quic'; then
-				warn "parse_uri: Skipping unsupported hysteria2 node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+				logs warn "parse_uri: Skipping unsupported hysteria2 node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
 				return 1
 			fi
 
@@ -263,7 +263,7 @@ parse_uri() {
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			jsonSet config \
 				'.type="socks" |
@@ -296,7 +296,7 @@ parse_uri() {
 
 			# https://shadowsocks.org/doc/sip002.html
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			jsonSet config \
@@ -337,7 +337,7 @@ parse_uri() {
 		trojan)
 			# https://p4gefau1t.github.io/trojan-go/developer/url/
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			jsonSet config \
@@ -388,11 +388,11 @@ parse_uri() {
 		tuic)
 			# https://github.com/daeuniverse/dae/discussions/182
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			if ! validation features 'with_quic'; then
-				warn "parse_uri: Skipping unsupported TUIC node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+				logs warn "parse_uri: Skipping unsupported TUIC node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
 				return 1
 			fi
 
@@ -425,20 +425,20 @@ parse_uri() {
 		vless)
 			# https://github.com/XTLS/Xray-core/discussions/716
 			url="$(parseURL "$uri")"
-			[ -z "$url" ] && { warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
+			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
 			if [ "$(jsonSelect params '.type')" = "kcp" ]; then
-				warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
+				logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
 				return 1
 			elif [ "$(jsonSelect params '.type')" = "quic" ]; then
 				if validation features 'with_quic'; then
 					if [ -n "$(jsonSelect params '.quicSecurity')" -a "$(jsonSelect params '.quicSecurity')" != "none" ]; then
-						warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
+						logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
 						return 1
 					fi
 				else
-					warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+					logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
 					return 1
 				fi
 			fi
@@ -520,31 +520,31 @@ parse_uri() {
 		vmess)
 			# Shadowrocket format
 			if echo "$uri" | grep -q "&"; then
-				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			fi
 
 			# https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
 			url="$(decodeBase64Str "$body" 2>/dev/null)"
 			[ -n "$url" ] || {
-				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			}
 			[ "$(jsonSelect url '.v')" = "2" ] || {
-				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			}
 			if [ "$(jsonSelect url '.net')" = "kcp" ]; then
-				warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			elif [ "$(jsonSelect url '.net')" = "quic" ]; then
 				if validation features 'with_quic'; then
 					if [ -n "$(jsonSelect url '.type')" -a "$(jsonSelect url '.type')" != "none" ] || [ -n "$(jsonSelect url '.path')" ]; then
-						warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
+						logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 						return 1
 					fi
 				else
-					warn "parse_uri: Skipping unsupported VMess node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+					logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
 					return 1
 				fi
 			fi
@@ -619,7 +619,7 @@ parse_uri() {
 			esac
 		;;
 		*)
-			warn "parse_uri: Skipping unsupported node '$uri'.\n"
+			logs warn "parse_uri: Skipping unsupported node '$uri'.\n"
 			return 1
 		;;
 	esac
@@ -639,7 +639,7 @@ parse_subscription() {
 
 	nodes="$(decodeBase64Str "$(downloadTo "$url")" 2>/dev/null | tr -d '\r' | $SED 's|\s|%20|g')"
 	[ -n "$nodes" ] || {
-		warn "parse_subscription: Unable to resolve resource from subscription '$url'.\n"
+		logs warn "parse_subscription: Unable to resolve resource from subscription '$url'.\n"
 		return 1
 	}
 
@@ -652,11 +652,11 @@ parse_subscription() {
 		let count++
 	done
 	time=$[ $($DATE -u +%s%3N) - $time ]
-	yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
-	yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
+	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
+	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
 
 	if isEmpty "$node_result"; then
-		warn "parse_subscription: Failed to update subscriptions: no valid node found.\n"
+		logs warn "parse_subscription: Failed to update subscriptions: no valid node found.\n"
 		return 1
 	fi
 

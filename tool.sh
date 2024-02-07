@@ -62,13 +62,13 @@ else
 	DATE=date
 	GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar tee awk jq $SED $MD5 $DATE $GETOPT"
+DEPENDENCIES="curl unzip tar awk jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 
 
 # Getargs
-GETARGS=$($GETOPT -n $(basename $0) -o gVhu -l update,generate,version,help -- "$@")
+GETARGS=$($GETOPT -n $(basename $0) -o gVhue -l update,generate,version,help -- "$@")
 [ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
 eval set -- "$GETARGS"
 ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")
@@ -92,6 +92,7 @@ Usage: $(basename $0) [OPTION]... \n\
   e.g. $(basename $0) -V          -- Returns version\n\
 \n\
 Options:\n\
+  -e                       -- Redirect error message to log file\n\
   -g, --generate           -- Rebuild configs\n\
   -u, --update             -- Update subscriptions\n\
   -V, --version            -- Returns version\n\
@@ -118,6 +119,9 @@ if [ "$#" -gt 1 ]; then
 			-V|--version)
 				_version
 				exit
+			;;
+			-e)
+				ENLOGFILE=true
 			;;
 			-g|--generate)
 				GENERATOR=true

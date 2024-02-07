@@ -28,10 +28,10 @@ yeah() {
 	echo -ne "${CLR_GREEN}$1${CLR_RST}"
 }
 
-# func <msg>
+# func <err|warn|yeah> <msg>
 logs() {
-	[ -f "$MAINLOG" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $1" | tee -a "$MAINLOG"; return 0; }
-	echo -ne "[$($DATE --iso-8601="seconds")]: $1"
+	[ -n "$ENLOGFILE" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $(${1:-err} 2>&1) $2" >> "$MAINLOG"; return 0; }
+	${1:-err} "$2"
 }
 
 pause() {
@@ -145,7 +145,7 @@ depCheck() {
 						curl)
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n"
 						;;
-						unzip|tar|tee|awk|sed.exe|md5sum.exe|date.exe|getopt.exe)
+						unzip|tar|awk|sed.exe|md5sum.exe|date.exe|getopt.exe)
 							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n"
 						;;
 						jq)

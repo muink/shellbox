@@ -5,6 +5,24 @@
 # See /LICENSE for more information.
 #
 
+# func <provider_number> <filter>
+filterVerify() {
+	local i="$1" filter="$2" filter_field
+	[ "$(jsonSelect filter 'type')" = "array" ] || { logs warn "updateProvider: Filter of provider [$i] is invalid.\n"; return 1; }
+	for f in $(seq 0 $[ $(jsonSelect filter 'length') -1 ]); do
+		filter_field="$(jsonSelect filter ".[$f]")"
+		if isEmpty filter_field || [ "$(jsonSelect filter_field 'type')" != "object" ]; then
+			logs warn "updateProvider: Field [$f] of the filter for provider [$i] is invalid.\n"
+			return 1
+		fi
+		# Field check
+		echo "$(jsonSelect filter_field '.action')" | grep -qE "^(include|exclude)$" ||
+			{ logs warn "updateProvider: Invalid value of key 'action' for filter field [$f] for provider [$i].\n"; return 1; }
+		[ "$(jsonSelect filter_field '(.regex|type) == "string"')" = "true" ] ||
+			{ logs warn "updateProvider: Invalid value of key 'regex' for filter field [$f] for provider [$i].\n"; return 1; }
+	done
+}
+
 updateProvider() {
 	[ -x "$(command -v "$SINGBOX")" ] || { logs err "sing-box is not installed.\n"; return 1; }
 	local setting="$(cat "$MAINSET")"
@@ -27,6 +45,12 @@ updateProvider() {
 			eval "isEmpty \"\$(jsonSelect provider '.$k')\" || \
 				$k=\"\$(jsonSelect provider '.$k')\""
 		done
+		# Filter Verify
+		if isEmpty "$filter"; then
+			unset filter
+		else
+			filterVerify "$i" "$filter" || continue
+		fi
 		# Updating
 		local result UA="$ua" FILTER="$filter"
 		parse_subscription result "$url" "$filter" || continue

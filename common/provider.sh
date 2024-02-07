@@ -647,6 +647,8 @@ parse_subscription() {
 	for node in $nodes; do
 		[ -n "$node" ] && parse_uri cfg "$node"
 		isEmpty "$cfg" && continue
+		# filter
+		filterCheck "$(jsonSelect cfg '.tag')" "$FILTER" && { logs note "parse_subscription: Skipping node: $(jsonSelect cfg '.tag').\n"; continue; }
 
 		jsonSetjson node_result ".[$count]=\$ARGS.positional[0]" "$cfg"
 		let count++
@@ -661,4 +663,24 @@ parse_subscription() {
 	fi
 
 	eval "$1=\"\$node_result\""
+}
+
+# func <namestr> [filter]
+filterCheck() {
+	local name="$1" filter="$2"
+	[ -n "$filter" ] || return 1
+
+	jsonSet filter \
+		'$ARGS.positional[0] as $name |
+		last(
+			label $out | .[] | (
+				.action as $action |
+				.regex as $regex |
+				$name | test($regex;null) | if $action == "include" then not else . end |
+				if . then true, break $out else false end
+			)
+		)' \
+		"$name"
+
+	[ "$filter" = "true" ] || return 1
 }

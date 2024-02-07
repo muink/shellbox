@@ -15,7 +15,7 @@
       "prefix": "❤️ Toper - ", // Optional. Add prefix for all nodes currently subscription.
       "ua": "v2rayng", // Optional. Sent User-Agent.
       "filter": [ // Optional. Pre-filter nodes.
-        { "action": "exclude", "keywords": [ "海外用户|回国" ] }
+        { "action": "exclude", "regex": "海外用户|回国" }
       ]
     },
     {
@@ -25,7 +25,7 @@
       "prefix": "[erma] ", // Optional. Add prefix for all nodes currently subscription.
       "ua": "passwall", // Optional. Sent User-Agent.
       "filter": [ // Optional. Pre-filter nodes.
-        { "action": "include", "keywords": [ "🇸🇬|SG|sg|Singapore|新加坡|狮城" ] }
+        { "action": "include", "regex": "🇸🇬|SG|sg|Singapore|新加坡|狮城" }
       ]
     }
   ],

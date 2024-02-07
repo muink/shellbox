@@ -24,14 +24,19 @@ warn() {
 }
 
 # func <msg>
+note() {
+	echo -ne "Note: $1"
+}
+
+# func <msg>
 yeah() {
 	echo -ne "${CLR_GREEN}$1${CLR_RST}"
 }
 
-# func <err|warn|yeah> <msg>
+# func <err|warn|note|yeah> <msg>
 logs() {
-	[ -n "$ENLOGFILE" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $(${1:-err} 2>&1) $2" >> "$MAINLOG"; return 0; }
-	${1:-err} "$2"
+	[ -n "$ENLOGFILE" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $(${1:-note} 2>&1) $2" >> "$MAINLOG"; return 0; }
+	${1:-note} "$2"
 }
 
 pause() {

@@ -171,3 +171,7 @@ checkCoreVersion() {
 	CORECURRVER="${cur:-null}"
 	CORENEWWVER="${new:-null}"
 }
+
+getCoreFeatures() {
+	SBFEATURES="$($SINGBOX version | grep '^Tags:')"
+}

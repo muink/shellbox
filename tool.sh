@@ -64,7 +64,7 @@ else
 fi
 DEPENDENCIES="curl unzip tar tee awk jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }
-SBFEATURES="$($SINGBOX version | grep '^Tags:')"
+[ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 
 
 # Getargs
@@ -242,6 +242,7 @@ case "$MENUID" in
 			if [ "$?" = "1" ]; then
 				err "Please download binary manually from \"https://github.com/SagerNet/sing-box/releases/tag/v$CORENEWWVER\" and put to \"$BINADIR/sing-box\"\n" 0
 			fi
+			getCoreFeatures
 		fi
 		pause
 	;;

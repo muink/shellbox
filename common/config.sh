@@ -5,22 +5,90 @@
 # See /LICENSE for more information.
 #
 
-# func <provider_number> <filter>
-filterVerify() {
-	local i="$1" filter="$2" filter_field
-	[ "$(jsonSelect filter 'type')" = "array" ] || { logs warn "updateProvider: Filter of provider [$i] is invalid.\n"; return 1; }
-	for f in $(seq 0 $[ $(jsonSelect filter 'length') -1 ]); do
-		filter_field="$(jsonSelect filter ".[$f]")"
-		if isEmpty filter_field || [ "$(jsonSelect filter_field 'type')" != "object" ]; then
-			logs warn "updateProvider: Field [$f] of the filter for provider [$i] is invalid.\n"
-			return 1
-		fi
-		# Field check
-		echo "$(jsonSelect filter_field '.action')" | grep -qE "^(include|exclude)$" ||
-			{ logs warn "updateProvider: Invalid value of key 'action' for filter field [$f] for provider [$i].\n"; return 1; }
-		[ "$(jsonSelect filter_field '(.regex|type) == "string"')" = "true" ] ||
-			{ logs warn "updateProvider: Invalid value of key 'regex' for filter field [$f] for provider [$i].\n"; return 1; }
-	done
+# func <providers>
+verifyProviders() {
+	local providers="$1" rcode
+
+	if [ -n "$providers" ]; then
+		rcode="$(jsonSelect providers \
+			'if (type != "array") or (length == 0) then "No providers available." else
+				. as $providers |
+				last(
+					label $out | foreach range(0,length) as $i (null;
+						$providers[$i] |
+						if (type != "object") or (length == 0) then "Provider [" + ($i|tostring) + "] is invalid.", break $out else
+							. as $provider |
+							# Required
+							last(
+								label $required | ["url","tag"] | foreach .[] as $k (null;
+									$provider[$k] |
+									if (type == "string") and (length > 0) then 0 else
+										"Key [\"" + $k + "\"] of the provider [" + ($i|tostring) + "] is invalid.", break $required
+									end
+								)
+							) |
+							if . != 0 then ., break $out else
+								# Optional
+								$provider | keys_unsorted |
+								last(
+									label $optional | foreach .[] as $k (null;
+										if ($k | test("^(prefix|ua)$") ) then
+											$provider[$k] |
+											if type == "null" then 0
+											elif type == "string" then 0 else
+												"Key [\"" + $k + "\"] of the provider [" + ($i|tostring) + "] is invalid.", break $optional
+											end
+										elif $k == "subgroup" then
+											$provider[$k] |
+											if (type == "string") and (length > 0) then 0
+											elif type == "array" then
+												. as $subgroups |
+												last(
+													label $optional_subgroup | foreach range(0,length) as $q (null;
+														$subgroups[$q] |
+														if (type == "string") and (length > 0) then 0
+														else "Invalid field [" + ($q|tostring) + "] of the key [\"" + $k + "\"] of the provider [" + ($i|tostring) + "] is invalid.", break $optional_subgroup end
+													)
+												) |
+												if . == 0 then 0 else ., break $optional end
+											else "Key [\"" + $k + "\"] of the provider [" + ($i|tostring) + "] is invalid.", break $optional end
+										elif $k == "filter" then
+											$provider[$k] |
+											if type != "array" then "Filters of the provider [" + ($i|tostring) + "] is invalid.", break $optional else
+												if length == 0 then 0 else
+													. as $filters |
+													last(
+														label $optional_filter | foreach range(0,length) as $q (null;
+															$filters[$q] |
+															if (type == "object") and (length > 0) then
+																# Field check
+																if ((.action|type) != "string") or (.action | test("^(include|exclude)$") | not) then
+																	"Invalid field of the key [\"action\"] for filter [" + ($q|tostring) + "] for provider [" + ($i|tostring) + "].", break $optional_filter
+																elif (.regex|type) != "string" then
+																	"Invalid field of the key [\"regex\"] for filter [" + ($q|tostring) + "] for provider [" + ($i|tostring) + "].", break $optional_filter
+																else 0 end
+															else "Filter [" + ($q|tostring) + "] of the provider [" + ($i|tostring)+ "] is invalid.", break $optional_filter end
+														)
+													) |
+													if . == 0 then 0 else ., break $optional end
+												end
+											end
+										else 0 end
+									)
+								) |
+								if . == 0 then 0 else ., break $out end
+							end
+						end
+					)
+				)
+			end' \
+		)"
+	else
+		rcode="No providers available."
+	fi
+
+	[ "$rcode" = "0" ] || { logs err "verifyProviders: $rcode\n"; return 1; }
+	return 0
 }
 
 updateProvider() {

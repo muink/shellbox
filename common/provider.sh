@@ -666,10 +666,10 @@ parse_subscription() {
 
 # func <namestr> [filter]
 filterCheck() {
-	local name="$1" filter="$2"
+	local name="$1" filter="$2" rcode
 	[ -n "$filter" ] || return 1
 
-	jsonSet filter \
+	rcode="$(jsonSelect filter \
 		'$ARGS.positional[0] as $name |
 		last(
 			label $out | .[] | (
@@ -679,7 +679,8 @@ filterCheck() {
 				if . then true, break $out else false end
 			)
 		)' \
-		"$name"
+		"$name" \
+	)"
 
-	[ "$filter" = "true" ] || return 1
+	[ "$rcode" = "true" ] || return 1
 }

@@ -5,14 +5,6 @@
 # See /LICENSE for more information.
 #
 
-dotType() {
-	jq 'type'
-}
-
-dotLength() {
-	jq 'length'
-}
-
 strToString() {
 	local str
 	if [ -z "$1" ]; then

@@ -81,7 +81,7 @@ parseURL() {
 	local services='{"http":80,"https":443,"hysteria2":443,"hy2":443}' obj='{}' url="$1"
 	local protocol userinfo username password host port fpath path search hash
 
-	obj="$(echo "$obj" | jq -c --args '.href=$ARGS.positional[0]' "$url" )"
+	jsonSet obj '.href=$ARGS.positional[0]' "$url"
 	# hash / URI fragment    /#(.+)$/
 	hash="$(echo "$url" | $SED -En 's|.*#(.+)$|\1|p')"
 	url="${url%#*}"
@@ -108,7 +108,7 @@ parseURL() {
 	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|fpath='\1';path='\2';search='\4'|p")"
 	[ -n "$fpath" ] && fpath=1
 
-	obj="$(echo "$obj" | jq -c --args \
+	jsonSet obj \
 		'.protocol=$ARGS.positional[0] |
 		.host=$ARGS.positional[1] |
 		.port=($ARGS.positional[2]|tonumber) |
@@ -124,9 +124,8 @@ parseURL() {
 		"$password" \
 		"$fpath" \
 		"$path" \
-		"$hash" \
-	)"
-	obj="$(echo "$obj" | jq -c --jsonargs '.searchParams=$ARGS.positional[0]' "$(urldecode_params "$search" )" )"
+		"$hash"
+	jsonSetjson obj '.searchParams=$ARGS.positional[0]' "$(urldecode_params "$search" )"
 
 	echo "$obj"
 }

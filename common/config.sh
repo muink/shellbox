@@ -31,6 +31,7 @@ updateProvider() {
 	local provider providers="$(jsonSelect setting '.providers')" count=0
 	local url tag ua filter
 
+	local time=$($DATE -u +%s%3N)
 	for i in $(seq 0 $[ $(jsonSelect providers 'length') -1 ]); do
 		provider="$(jsonSelect providers ".[$i]")"
 		[ "$(jsonSelect provider 'type')" = "object" ] || { logs warn "updateProvider: '$provider' is not a valid provider.\n"; continue; }
@@ -57,6 +58,7 @@ updateProvider() {
 		echo -n "$result" > "$SUBSDIR/$tag.json"
 		let count++
 	done
-
+	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully updated $count providers of total $(jsonSelect providers 'length').\n"
+	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
 }

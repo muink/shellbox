@@ -104,7 +104,7 @@ updateProvider() {
 	verifyProviders "$providers" || return 1
 
 	local provider provider_count="$(jsonSelect providers 'length')" count=0
-	local result UA FILTER
+	local node_result UA FILTER
 
 	local time=$($DATE -u +%s%3N)
 	for i in $(seq 0 $[ $provider_count -1 ]); do
@@ -115,9 +115,9 @@ updateProvider() {
 		done
 		# Updating
 		UA="$ua" FILTER="$filter"
-		parse_subscription result "$url" || continue
+		parse_provider node_result "$url" || continue
 
-		echo -n "$result" > "$SUBSDIR/$tag.json"
+		echo -n "$node_result" > "$SUBSDIR/$tag.json"
 		let count++
 	done
 	time=$[ $($DATE -u +%s%3N) - $time ]

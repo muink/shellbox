@@ -150,6 +150,8 @@ buildURL() {
 
 # func <var> <uri>
 parse_uri() {
+	echo "$1" | grep -qE "^(config|url|params|uri|type|body|ss_suri|ss_sbody|ss_lable|transport_type|transport_depath|tls_type)$" &&
+		{ logs err "parse_uri: Variable name '$1' is conflict.\n"; return 1; }
 	local config='{}' url params
 	[ -n "$1" ] && eval "$1=''" || return 1
 	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*):(//)?||')"
@@ -632,36 +634,38 @@ parse_uri() {
 }
 
 # func <var> <subscription_url>
-parse_subscription() {
-	local node nodes node_result='[]' url
-	[ "$#" -lt 2 ] && return 1 || { eval "$1=''"; url="$2"; }
+parse_provider() {
+	echo "$1" | grep -qE "^(node|nodes|result|results|url|time|count)$" &&
+		{ logs err "parse_provider: Variable name '$1' is conflict.\n"; return 1; }
+	local node nodes result results='[]' url="$2"
+	[ -n "$1" ] && eval "$1=''" || return 1
 
 	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" 2>/dev/null | tr -d '\r' | $SED 's|\s|%20|g')"
 	[ -n "$nodes" ] || {
-		logs warn "parse_subscription: Unable to resolve resource from subscription '$url'.\n"
+		logs warn "parse_provider: Unable to resolve resource from provider '$url'.\n"
 		return 1
 	}
 
-	local time=$($DATE -u +%s%3N) count=0 cfg
+	local time=$($DATE -u +%s%3N) count=0
 	for node in $nodes; do
-		[ -n "$node" ] && parse_uri cfg "$node"
-		isEmpty "$cfg" && continue
+		[ -n "$node" ] && parse_uri result "$node"
+		isEmpty "$result" && continue
 		# filter
-		filterCheck "$(jsonSelect cfg '.tag')" "$FILTER" && { logs note "parse_subscription: Skipping node: $(jsonSelect cfg '.tag').\n"; continue; }
+		filterCheck "$(jsonSelect result '.tag')" "$FILTER" && { logs note "parse_provider: Skipping node: $(jsonSelect result '.tag').\n"; continue; }
 
-		jsonSetjson node_result ".[$count]=\$ARGS.positional[0]" "$cfg"
+		jsonSetjson results ".[$count]=\$ARGS.positional[0]" "$result"
 		let count++
 	done
 	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
 
-	if isEmpty "$node_result"; then
-		logs warn "parse_subscription: Failed to update subscriptions: no valid node found.\n"
+	if isEmpty "$results"; then
+		logs err "parse_provider: Failed to update provider: no valid node found.\n"
 		return 1
 	fi
 
-	eval "$1=\"\$node_result\""
+	eval "$1=\"\$results\""
 }
 
 # func <namestr> [filter]

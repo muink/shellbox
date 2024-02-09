@@ -45,12 +45,12 @@ pause() {
 
 # func <url> [ua]
 wfetch() {
-	curl --user-agent "${2:-shellbox}" --connect-timeout 10 --retry 3 -sL "$1"
+	curl --user-agent "${2:-shellbox}" --connect-timeout 10 --retry 3 -sL --url "$1"
 }
 
 # func <url> [target]
 downloadTo() {
-	curl --progress-bar --connect-timeout 10 --retry 3 -L "$1" ${2:+-o "$2"}
+	curl --progress-bar --connect-timeout 10 --retry 3 -L --url "$1" ${2:+-o "$2"}
 }
 
 # func <str>

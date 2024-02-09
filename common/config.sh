@@ -22,9 +22,15 @@ verifyProviders() {
 							last(
 								label $required | ["url","tag"] | foreach .[] as $k (null;
 									$provider[$k] |
-									if (type == "string") and (length > 0) then 0 else
-										"Key [\"" + $k + "\"] of the provider [" + ($i|tostring) + "] is invalid.", break $required
-									end
+									if ($k == "url") then
+										if (type == "string") and (length > 0) then 0 else
+											"Key [\"url\"] of the provider [" + ($i|tostring) + "] is invalid.", break $required
+										end
+									elif ($k == "tag") then
+										if (type == "string") and (length > 0) and test("^([[:word:]]+)$") then 0 else
+											"Key [\"tag\"] of the provider [" + ($i|tostring) + "] is invalid.", break $required
+										end
+									else 0 end
 								)
 							) |
 							if . != 0 then ., break $out else

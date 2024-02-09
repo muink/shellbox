@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2024 Anya Lin
 #
 # This is free software, licensed under the GNU General Public License v3.
@@ -32,34 +32,45 @@ isEmpty() {
 	[ -z "$1" -o "$1" = '""' -o "$1" = "null" -o "$(echo "$1" | jq '(type|test("^(object|array)$")) and (length == 0)' 2>/dev/null)" = "true" ] || return 1
 }
 
-# func <objvar> [filters]
+# func <objvar> <filters> [args]
 jsonSelect() {
-	eval "echo \"\$$1\" | jq -c '${2:-.}' | jq -rc './/\"\"'"
+	local obj="${!1}" filters="$2"
+	shift 2
+
+	eval "echo \"\$obj\" | jq -c --args '${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
 }
 
 # func <objvar> <filters> [args]
 jsonSet() {
-	local cfg="$1" filters="$2"
+	local __tmp
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '${2:-.}' \"\$@\" )\""
 	shift 2
-	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --args '${filters:-.}' \"\$@\" )\""
+
+	eval "$__tmp"
 }
 
 # func <objvar> <filters> [jsonargs]
 jsonSetjson() {
-	local cfg="$1" filters="$2"
+	local __tmp
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '${2:-.}' \"\$@\" )\""
 	shift 2
-	eval "$cfg=\"\$( echo \"\$$cfg\" | jq -c --jsonargs '${filters:-.}' \"\$@\" )\""
+
+	eval "$__tmp"
 }
 
 # func <objvar> [inputvar1] [inputvar2] ...
 jsonMerge() {
-	local cfg="$1"; shift
-	local inputs="$(echo "$@" | $SED 's|\s|" "\$|g;s|^|"\$|;s|$|"|')"
-	eval "$cfg=\"\$( echo $inputs | jq -nc 'reduce inputs as \$i (null; .+\$i)' )\""
+	local __tmp=$1; shift
+	__tmp="$__tmp=\"\$( echo $(echo "$@" | $SED 's|\s|" "\$|g;s|^|"\$|;s|$|"|') | jq -nc 'reduce inputs as \$i (null; .+\$i)' )\""
+
+	eval "$__tmp"
 }
 
 # func <objvar> [file1] [file1] ...
 jsonMergeFiles() {
-	local cfg="$1"; shift
-	eval "$cfg=\"\$( jq -nc 'reduce inputs as \$i (null; .+\$i)' \"\$@\" )\""
+	local __tmp
+	__tmp="$1=\"\$( jq -nc 'reduce inputs as \$i (null; .+\$i)' \"\$@\" )\""
+	shift
+
+	eval "$__tmp"
 }

@@ -20,7 +20,8 @@ urlencode() {
 # func <url>
 urldecode_params() {
 	[ -z "$1" ] && echo '{}' && return 0
-	echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {($key): $val}' | jq -sc 'add // {}'
+	echo "&$1" | sed -E 's|&([^&=]+)(=([^&]*))?|,"\1":"\3"|g;s|^,|{|;s|$|}|' # DONOT decode params value, sed cannot handle array or object
+	#echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {($key): $val}' | jq -sc 'add // {}'
 }
 
 # func <obj>
@@ -78,10 +79,9 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 # func <url>
 parseURL() {
 	isEmpty "$1" && return 1
-	local services='{"http":80,"https":443,"hysteria2":443,"hy2":443}' obj='{}' url="$1"
+	local url="$1"
 	local protocol userinfo username password host port fpath path search hash
 
-	jsonSet obj '.href=$ARGS.positional[0]' "$url"
 	# hash / URI fragment    /#(.+)$/
 	hash="$(echo "$url" | $SED -En 's|.*#(.+)$|\1|p')"
 	url="${url%#*}"
@@ -92,7 +92,12 @@ parseURL() {
 	# host    /^[\w\-\.]+/
 	# port    /^:(\d+)/
 	eval "$(echo "$url" | $SED -En "s,^(([^@]+)@)?([[:alnum:]_\.-]+|\[[[:xdigit:]:\.]+\])(:([0-9]+))?(.*),userinfo='\2';host='\3';port='\5';url='\6',p")"
-	[ -z "$port" ] && port="$(echo "$services" | jq -r --arg protocol "$protocol" '.[$protocol]')"
+	if [ -z "$port" ]; then
+		case "$protocol" in
+			http) port=80 ;;
+			https|hysteria2|hy2) port=443 ;;
+		esac
+	fi
 	[ -z "$host" -o -z "$port" ] && return 1
 	validation host "$host" || return 1
 	validation port "$port" || return 1
@@ -106,28 +111,22 @@ parseURL() {
 	# path    /^(\/[^\?\#]*)/
 	# search / URI query    /^\?([^#]+)/
 	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|fpath='\1';path='\2';search='\4'|p")"
-	[ -n "$fpath" ] && fpath=1
+	[ -n "$fpath" ] && fpath=true || fpath=false
 
-	jsonSet obj \
-		'.protocol=$ARGS.positional[0] |
-		.host=$ARGS.positional[1] |
-		.port=($ARGS.positional[2]|tonumber) |
-		.username=$ARGS.positional[3] |
-		.password=$ARGS.positional[4] |
-		.fpath=($ARGS.positional[5]|(. == "1")) |
-		.path=$ARGS.positional[6] |
-		.hash=$ARGS.positional[7]' \
-		"$protocol" \
-		"$host" \
-		"$port" \
-		"$username" \
-		"$password" \
-		"$fpath" \
-		"$path" \
-		"$hash"
-	jsonSetjson obj '.searchParams=$ARGS.positional[0]' "$(urldecode_params "$search" )"
-
-	echo "$obj"
+	echo "$(cat <<-EOF
+		{
+			"protocol": "$protocol",
+			"host": "$host",
+			"port": $port,
+			"username": "$username",
+			"password": "$password",
+			"fpath": $fpath,
+			"path": "$path",
+			"hash": "$hash",
+			"searchParams": $(urldecode_params "$search" )
+		}
+	EOF
+	)"
 }
 
 # func <obj>

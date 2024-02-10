@@ -5,11 +5,11 @@
 # See /LICENSE for more information.
 #
 
-CLR_RST='\033[0m'
-CLR_RED='\033[0;31m'
-CLR_GREEN='\033[0;32m'
-CLR_YELLOW='\033[0;33m'
-CLR_BLUE='\033[0;33m'
+export CLR_RST='\033[0m'
+export CLR_RED='\033[0;31m'
+export CLR_GREEN='\033[0;32m'
+export CLR_YELLOW='\033[0;33m'
+export CLR_BLUE='\033[0;33m'
 
 # func <msg> [errcode]
 err() {
@@ -69,19 +69,19 @@ getSysinfo() {
 	case "$OSTYPE" in
 		linux-gnu)
 			# Linux
-			OS=linux
+			export OS=linux
 		;;
 		darwin*)
 			# Mac OSX
-			OS=darwin
+			export OS=darwin
 		;;
 		cygwin)
 			# POSIX compatibility layer and Linux environment emulation for Windows
-			OS=windows
+			export OS=windows
 		;;
 		msys)
 			# Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
-			OS=windows
+			export OS=windows
 		;;
 		*)
 			# Unknown.
@@ -90,16 +90,17 @@ getSysinfo() {
 	esac
 	case "$(uname -m || echo $PROCESSOR_ARCHITECTURE)" in
 		x86_64|amd64|AMD64)
-			ARCH=amd64
+			export ARCH=amd64
 		;;
 		arm64|ARM64|aarch64|AARCH64|armv8*|ARMV8*)
-			ARCH=arm64
+			export ARCH=arm64
 		;;
 		*)
 			# Unknown.
 			unset ARCH
 		;;
 	esac
+	export NPROC=$(cat /proc/cpuinfo | grep "processor" | wc -l)
 	[ -n "$OS" -a -n "$ARCH" ] || err "Unsupported system or architecture.\n"
 	[ "$OS" = "windows" -a "$ARCH" = "arm64" ] && err "Unsupported system or architecture.\n"
 	return 0
@@ -183,5 +184,5 @@ checkCoreVersion() {
 }
 
 getCoreFeatures() {
-	SBFEATURES="$($SINGBOX version | grep '^Tags:')"
+	export SBFEATURES="$($SINGBOX version | grep '^Tags:')"
 }

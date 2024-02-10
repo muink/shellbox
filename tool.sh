@@ -17,19 +17,19 @@ By: Anya Lin$(printf "%$[ 40 - ${#VERSION} ]s" v$VERSION)
 ================================================="
 
 # Main program
-MAINDIR="$(cd $(dirname $0); pwd)"
-BINADIR="$MAINDIR/bin"
-COMMDIR="$MAINDIR/common"
-MAINSET="$MAINDIR/settings.json"
-MAINLOG="$MAINDIR/shellbox.log"
+export MAINDIR="$(cd $(dirname $0); pwd)"
+export BINADIR="$MAINDIR/bin"
+export COMMDIR="$MAINDIR/common"
+export MAINSET="$MAINDIR/settings.json"
+export MAINLOG="$MAINDIR/shellbox.log"
 
 # sing-box
-WORKDIR="$MAINDIR/resources"
-CONFDIR="$WORKDIR/configs"
-LOGSDIR="$WORKDIR/logs"
-SUBSDIR="$WORKDIR/providers"
-TEMPDIR="$WORKDIR/templates"
-DASHDIR="$WORKDIR/ui"
+export WORKDIR="$MAINDIR/resources"
+export CONFDIR="$WORKDIR/configs"
+export LOGSDIR="$WORKDIR/logs"
+export SUBSDIR="$WORKDIR/providers"
+export TEMPDIR="$WORKDIR/templates"
+export DASHDIR="$WORKDIR/ui"
 
 
 export PATH="$BINADIR:$PATH"
@@ -50,26 +50,26 @@ export PATH="$BINADIR:$PATH"
 [ -d "$SUBSDIR" ] || mkdir -p "$SUBSDIR"
 [ -d "$TEMPDIR" ] || mkdir -p "$TEMPDIR"
 [ -d "$DASHDIR" ] || mkdir -p "$DASHDIR"
-#
+# ENV
 getSysinfo || { pause; exit; }
 if [ "$OS" = "darwin" ]; then
-	SINGBOX=sing-box
-	SED=gsed
-	MD5=gmd5sum
-	DATE=gdate
-	GETOPT=ggetopt
+	export SINGBOX=sing-box
+	export SED=gsed
+	export MD5=gmd5sum
+	export DATE=gdate
+	export GETOPT=ggetopt
 elif [ "$OS" = "windows" ]; then
-	SINGBOX=sing-box.exe
-	SED=sed.exe
-	MD5=md5sum.exe
-	DATE=date.exe
-	GETOPT=getopt.exe
+	export SINGBOX=sing-box.exe
+	export SED=sed.exe
+	export MD5=md5sum.exe
+	export DATE=date.exe
+	export GETOPT=getopt.exe
 else
-	SINGBOX=sing-box
-	SED=sed
-	MD5=md5sum
-	DATE=date
-	GETOPT=getopt
+	export SINGBOX=sing-box
+	export SED=sed
+	export MD5=md5sum
+	export DATE=date
+	export GETOPT=getopt
 fi
 DEPENDENCIES="curl unzip tar awk jq $SED $MD5 $DATE $GETOPT"
 depCheck || { pause; exit; }

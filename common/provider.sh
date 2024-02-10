@@ -20,7 +20,7 @@ urlencode() {
 # func <url>
 urldecode_params() {
 	[ -z "$1" ] && echo '{}' && return 0
-	echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {$key: $val}' | jq -sc 'add // {}'
+	echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {($key): $val}' | jq -sc 'add // {}'
 }
 
 # func <obj>

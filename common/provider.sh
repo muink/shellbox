@@ -173,26 +173,24 @@ parse_uri() {
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
-			jsonSet config \
-				'.type="http" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber)' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')"
-			# username password
-			if ! isEmpty "$(jsonSelect url '.username')"; then
-				jsonSet config '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )"
-				isEmpty "$(jsonSelect url '.password')" ||
-					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
-			fi
-			# path
-			isEmpty "$(jsonSelect url '.fpath')" ||
-				jsonSet config '.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path')"
-			# tls
-			[ "$type" = "https" ] &&
-				jsonSet config '.tls.enabled=true'
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| .type="http"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				# username password
+				| if ($url.username|type) == "string" and ($url.username|length) > 0 then
+					.username=($url.username|urldecode)
+					| if ($url.password|type) == "string" and ($url.password|length) > 0 then
+						.password=($url.password|urldecode)
+					else . end
+				else . end
+				# path
+				| if $url.fpath then .path="/"+$url.path else . end
+				# tls
+				| if $url.protocol == "https" then .tls.enabled=true else . end' \
+				"$url"
 		;;
 		hysteria)
 			# https://v1.hysteria.network/docs/uri-scheme/

@@ -85,8 +85,8 @@ parseURL() {
 	# hash / URI fragment    /#(.+)$/
 	hash="$(echo "$url" | $SED -En 's|.*#(.+)$|\1|p')"
 	url="${url%#*}"
-	# protocol / URI scheme    /^([[:alpha:]][[:alpha:]\d\+\-\.]*):(//)*/
-	eval "$(echo "$url" | $SED -En "s|^([[:alpha:]][[:alnum:]\.+-]*):(//)?(.+)|protocol='\1';url='\3'|p")"
+	# protocol / URI scheme    /^([[:alpha:]][[:alpha:]\d\+\-\.]*):\/\//
+	eval "$(echo "$url" | $SED -En "s|^([[:alpha:]][[:alnum:]\.+-]*)://(.+)|protocol='\1';url='\2'|p")"
 	[ -n "$protocol" ] || return 1
 	# userinfo    /^([^@]+)@/
 	# host    /^[\w\-\.]+/

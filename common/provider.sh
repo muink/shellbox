@@ -69,6 +69,9 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 ::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})|\
 ([[:xdigit:]]{1,4}:){1,4}:((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2}))$" || return 1
 		;;
+		md5)
+			[ "${#str}" -eq 32 ] && echo "$str" | grep -qE "^[[:xdigit:]]+$" || return 1
+		;;
 		*)
 			logs err "validation: Invalid type '$type'.\n"
 			return 1
@@ -113,6 +116,11 @@ parseURL() {
 	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|fpath='\1';path='\2';search='\4'|p")"
 	[ -n "$fpath" ] && fpath=true || fpath=false
 
+	# pre-decode
+	[ -n "$path" ] && path="$(urldecode "$path")"
+	[ -n "$hash" ] && hash="$(urldecode "$hash")" || hash="$(calcStringMD5 "$url")"
+	#search
+
 	echo "$(cat <<-EOF
 		{
 			"protocol": "$protocol",
@@ -139,10 +147,15 @@ buildURL() {
 	userinfo="$(jsonSelect obj '.username + if (.password|length) > 0 then ":" + .password else "" end')"
 	hostport="$(jsonSelect obj '.host + ":" + (.port|tostring)')"
 	[ -n "$(jsonSelect obj '.fpath')" ] && {
-		path="/$(jsonSelect obj '.path')"
+		path="/$(urlencode "$(jsonSelect obj '.path')" )"
 	}
 	query="$(urlencode_params "$(jsonSelect obj '.searchParams')" )"
 	fragment="$(jsonSelect obj '.hash')"
+	if validation md5 "$fragment"; then
+		unset fragment
+	else
+		fragment="$(urlencode "$fragment")"
+	fi
 
 	echo "$scheme://${userinfo:+$userinfo@}$hostport$path${query:+?$query}${fragment:+#$fragment}"
 }

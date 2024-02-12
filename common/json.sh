@@ -5,6 +5,25 @@
 # See /LICENSE for more information.
 #
 
+# Ref: https://gist.github.com/muink/b7f506e4f210633d466c5c8e48440384
+JQFUNC_urid='def urid:
+	def uni2num:
+		if 48 <= . and . <= 57 then . - 48 elif 65 <= . and . <= 70 then . - 55 else . - 87 end;
+	def decode:
+		def loop($i):
+			if $i >= length then empty else 16 * (.[$i+1] | uni2num) + (.[$i+2] | uni2num), loop($i+3) end;
+		explode | [loop(0)];
+	def utf82uni:
+		def loop($i):
+			if $i >= length then empty
+			elif .[$i] >= 240 then (.[$i+3]-128) + 64*(.[$i+2]-128) + 4096*(.[$i+1]-128) + 262144*(.[$i]-240), loop($i+4)
+			elif .[$i] >= 224 then (.[$i+2]-128) + 64*(.[$i+1]-128) + 4096*(.[$i]-224), loop($i+3)
+			elif .[$i] >= 192 then (.[$i+1]-128) + 64*(.[$i]-192), loop($i+2)
+			else .[$i], loop($i+1)
+			end;
+		[loop(0)];
+	gsub("(?<m>(?:%[[:xdigit:]]{2})+)"; .m | decode | utf82uni | implode);'
+
 strToString() {
 	local str
 	if [ -z "$1" ]; then
@@ -37,13 +56,13 @@ jsonSelect() {
 	local obj="${!1}" filters="$2"
 	shift 2
 
-	eval "echo \"\$obj\" | jq -c --args '${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
+	eval "echo \"\$obj\" | jq -c --args '$JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
 }
 
 # func <objvar> <filters> [args]
 jsonSet() {
 	local __tmp
-	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '${2:-.}' \"\$@\" )\""
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '$JQFUNC_urid ${2:-.}' \"\$@\" )\""
 	shift 2
 
 	eval "$__tmp"
@@ -52,7 +71,7 @@ jsonSet() {
 # func <objvar> <filters> [jsonargs]
 jsonSetjson() {
 	local __tmp
-	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '${2:-.}' \"\$@\" )\""
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '$JQFUNC_urid ${2:-.}' \"\$@\" )\""
 	shift 2
 
 	eval "$__tmp"

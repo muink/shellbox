@@ -181,9 +181,9 @@ parse_uri() {
 				| .server_port=$url.port
 				# username password
 				| if ($url.username|type) == "string" and ($url.username|length) > 0 then
-					.username=($url.username|urldecode)
+					.username=($url.username|urid)
 					| if ($url.password|type) == "string" and ($url.password|length) > 0 then
-						.password=($url.password|urldecode)
+						.password=($url.password|urid)
 					else . end
 				else . end
 				# path

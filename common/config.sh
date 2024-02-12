@@ -14,7 +14,7 @@ verifyProviders() {
 			'if (type != "array") or (length == 0) then "No providers available." else
 				. as $providers |
 				last(
-					label $out | foreach range(0,length) as $i (null;
+					label $out | foreach range(length) as $i (null;
 						$providers[$i] |
 						if (type != "object") or (length == 0) then "Provider [" + ($i|tostring) + "] is invalid.", break $out else
 							. as $provider |
@@ -50,7 +50,7 @@ verifyProviders() {
 											elif type == "array" then
 												. as $subgroups |
 												last(
-													label $optional_subgroup | foreach range(0,length) as $q (null;
+													label $optional_subgroup | foreach range(length) as $q (null;
 														$subgroups[$q] |
 														if (type == "string") and (length > 0) then 0
 														else "Invalid field [" + ($q|tostring) + "] of the key [\"" + $k + "\"] of the provider [" + ($i|tostring) + "] is invalid.", break $optional_subgroup end
@@ -64,7 +64,7 @@ verifyProviders() {
 												if length == 0 then 0 else
 													. as $filters |
 													last(
-														label $optional_filter | foreach range(0,length) as $q (null;
+														label $optional_filter | foreach range(length) as $q (null;
 															$filters[$q] |
 															if (type == "object") and (length > 0) then
 																# Field check

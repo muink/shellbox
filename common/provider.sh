@@ -163,11 +163,11 @@ buildURL() {
 
 # func <var> <uri>
 parse_uri() {
-	echo "$1" | grep -qE "^(config|url|params|uri|type|body|ss_suri|ss_sbody|ss_lable|transport_type|transport_depath|tls_type)$" &&
+	echo "$1" | grep -qE "^(config|url|params|uri|type|body|ss_body|ss_lable|transport_type|transport_depath|tls_type)$" &&
 		{ logs err "parse_uri: Variable name '$1' is conflict.\n"; return 1; }
 	local config='{}' url params
 	[ -n "$1" ] && eval "$1=''" || return 1
-	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*):(//)?||')"
+	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*)://||')"
 
 	case "$type" in
 		http|https)
@@ -292,55 +292,39 @@ parse_uri() {
 		;;
 		ss)
 			# Shadowrocket format
-			local ss_suri=null
-			jsonSet ss_suri '$ARGS.positional[0]|split("#")' "$body"
-			if [ "$(jsonSelect ss_suri 'length')" -le 2 ]; then
-				local ss_sbody="$(decodeBase64Str "$(jsonSelect ss_suri '.[0]')" 2>/dev/null)"
-				[ -n "$ss_sbody" ] && {
-					local ss_lable="$(jsonSelect ss_suri '.[1]')"
-					uri="$type://$ss_sbody$(isEmpty "$ss_lable" || echo -n "#$ss_lable")"
-				}
-			fi
+			local ss_body ss_lable
+			eval "$(echo "$body" | $SED -En "s|^([^#]+)(#.*)?|ss_body='\1';ss_lable='\2'|p")"
+			ss_body="$(decodeBase64Str "$ss_body")"
+			[ -n "$ss_body" ] && uri="$type://$ss_body$ss_lable"
 
 			# https://shadowsocks.org/doc/sip002.html
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
-			jsonSet config \
-				'.type="shadowsocks" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber)' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')"
-			# method password
-			if isEmpty "$(jsonSelect url '.password')"; then
-				jsonSet config \
-					'. as $config |
-					$ARGS.positional[0]|@base64d|split(":") as $data |
-					$config |
-					.method=$data[0] |
-					.password=$data[1]' \
-					"$(urldecode "$(jsonSelect url '.username')" )"
-			else
-				jsonSet config \
-					'.method=$ARGS.positional[0] |
-					.password=$ARGS.positional[1]' \
-					"$(jsonSelect url '.username')" \
-					"$(urldecode "$(jsonSelect url '.password')" )"
-			fi
-			# plugin plugin_opts
-			if ! isEmpty "$(jsonSelect params '.plugin')"; then
-				jsonSet config \
-					'. as $config |
-					$ARGS.positional[0]|split(";") as $data |
-					$config |
-					.plugin=($data[0]|if (. == "simple-obfs") then "obfs-local" else . end) |
-					.plugin_opts=($data[1:]|join(";"))' \
-					"$(urldecode "$(jsonSelect params '.plugin')" )"
-			fi
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| $ARGS.positional[1] as $params
+				| .type="shadowsocks"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				# method password
+				| if ($url.password|length) > 0 then
+					.password=($url.password|urid)
+					| .method=$url.username
+				else
+					($url.username | urid | @base64d | split(":")) as $data
+					| .method=$data[0]
+					| .password=$data[1]
+				end
+				# plugin plugin_opts
+				| if ($params.plugin|length) > 0 then
+					($params.plugin | urid | split(";")) as $data
+					| .plugin=($data[0] | if . == "simple-obfs" then "obfs-local" else . end)
+					| .plugin_opts=($data[1:] | join(";"))
+				else . end' \
+				"$url" "$params"
 		;;
 		trojan)
 			# https://p4gefau1t.github.io/trojan-go/developer/url/
@@ -533,7 +517,7 @@ parse_uri() {
 			fi
 
 			# https://github.com/2dust/v2rayN/wiki/%E5%88%86%E4%BA%AB%E9%93%BE%E6%8E%A5%E6%A0%BC%E5%BC%8F%E8%AF%B4%E6%98%8E(ver-2)
-			url="$(decodeBase64Str "$body" 2>/dev/null)"
+			url="$(decodeBase64Str "$body")"
 			[ -n "$url" ] || {
 				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
@@ -647,7 +631,7 @@ parse_provider() {
 	local node nodes result results='[]' url="$2"
 	[ -n "$1" ] && eval "$1=''" || return 1
 
-	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" 2>/dev/null | tr -d '\r' | $SED 's|\s|%20|g')"
+	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" | tr -d '\r' | $SED 's|\s|%20|g')"
 	[ -n "$nodes" ] || {
 		logs warn "parse_provider: Unable to resolve resource from provider '$url'.\n"
 		return 1

@@ -106,9 +106,10 @@ parseURL() {
 	validation port "$port" || return 1
 
 	if [ -n "$userinfo" ]; then
-		# username    /^[[:alnum:]\+\-\_\.]+/
+		# https://www.rfc-editor.org/rfc/rfc3986.html#section-3.2.1
+		# username    /^[^:]+/
 		# password    /^:([^:]+)/
-		eval "$(echo "$userinfo" | $SED -En "s|^([[:alnum:]_\.+-]+)(:([^:]+))?.*|username='\1';password='\3'|p")"
+		eval "$(echo "$userinfo" | $SED -En "s|^([^:]+)(:([^:]+))?.*|username='\1';password='\3'|p")"
 	fi
 
 	# path    /^(\/[^\?\#]*)/

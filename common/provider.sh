@@ -163,9 +163,9 @@ buildURL() {
 
 # func <var> <uri>
 parse_uri() {
-	echo "$1" | grep -qE "^(config|url|params|uri|type|body|ss_body|ss_lable|transport_type|transport_depath|tls_type)$" &&
+	echo "$1" | grep -qE "^(config|url|uri|type|body|ss_body|ss_lable|transport_type|transport_depath|tls_type)$" &&
 		{ logs err "parse_uri: Variable name '$1' is conflict.\n"; return 1; }
-	local config='{}' url params
+	local config='{}' url
 	[ -n "$1" ] && eval "$1=''" || return 1
 	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*)://||')"
 
@@ -197,10 +197,9 @@ parse_uri() {
 			# https://v1.hysteria.network/docs/uri-scheme/
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
-			params="$(jsonSelect url '.searchParams')"
 
 			if validation features 'with_quic'; then
-				if [ "$(jsonSelect params '(.protocol|length) > 0 and .protocol != "udp"')" = "true" ]; then
+				if [ "$(jsonSelect url '(.searchParams.protocol|length) > 0 and .searchParams.protocol != "udp"')" = "true" ]; then
 					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
 					return 1
 				fi
@@ -211,29 +210,30 @@ parse_uri() {
 
 			jsonSetjson config \
 				'$ARGS.positional[0] as $url
-				| $ARGS.positional[1] as $params
+				| $url.searchParams as $params
 				| .type="hysteria"
 				| .tag=$url.hash
 				| .server=$url.host
 				| .server_port=$url.port
 				| .up_mbps=($params.upmbps|tonumber)
 				| .down_mbps=($params.downmbps|tonumber)
-				# obfs
-				| if ($params.obfsParam|length) > 0 then .obfs=($params.obfsParam|urid) else . end
-				# auth_str
-				| if ($params.auth|length) > 0 then .auth_str=($params.auth|urid) else . end
-				# tls
 				| .tls.enabled=true
-				| if ($params.peer|length) > 0 then .tls.server_name=($params.peer|urid) else . end
-				| if ($params.insecure|test("^(1|true)$") ) then .tls.insecure=true else . end
-				| if ($params.alpn|length) > 0 then .tls.alpn=$params.alpn else . end' \
-				"$url" "$params"
+				| if ($params|length) > 0 then
+					# obfs
+					| if ($params.obfsParam|length) > 0 then .obfs=($params.obfsParam|urid) else . end
+					# auth_str
+					| if ($params.auth|length) > 0 then .auth_str=($params.auth|urid) else . end
+					# tls
+					| if ($params.peer|length) > 0 then .tls.server_name=($params.peer|urid) else . end
+					| if ($params.insecure|test("^(1|true)$") ) then .tls.insecure=true else . end
+					| if ($params.alpn|length) > 0 then .tls.alpn=$params.alpn else . end
+				else . end' \
+				"$url"
 		;;
 		hysteria2|hy2)
 			# https://v2.hysteria.network/docs/developers/URI-Scheme/
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
-			params="$(jsonSelect url '.searchParams')"
 
 			if ! validation features 'with_quic'; then
 				logs warn "parse_uri: Skipping unsupported hysteria2 node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
@@ -242,11 +242,12 @@ parse_uri() {
 
 			jsonSetjson config \
 				'$ARGS.positional[0] as $url
-				| $ARGS.positional[1] as $params
+				| $url.searchParams as $params
 				| .type="hysteria2"
 				| .tag=$url.hash
 				| .server=$url.host
 				| .server_port=$url.port
+				| .tls.enabled=true
 				# password
 				| if ($url.username|length) > 0 then
 					if ($url.password|length) > 0 then
@@ -255,14 +256,15 @@ parse_uri() {
 						.password=($url.username|urid)
 					end
 				else . end
-				# obfs
-				| if ($params.obfs|length) > 0 then .obfs.type=$params.obfs else . end
-				| if ($params.["obfs-password"]|length) > 0 then .obfs.password=($params.["obfs-password"]|urid) else . end
-				# tls
-				| .tls.enabled=true
-				| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
-				| if $params.insecure == "1" then .tls.insecure=true else . end' \
-				"$url" "$params"
+				| if ($params|length) > 0 then
+					# obfs
+					| if ($params.obfs|length) > 0 then .obfs.type=$params.obfs else . end
+					| if ($params.["obfs-password"]|length) > 0 then .obfs.password=($params.["obfs-password"]|urid) else . end
+					# tls
+					| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+					| if $params.insecure == "1" then .tls.insecure=true else . end
+				else . end' \
+				"$url"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"
@@ -300,11 +302,10 @@ parse_uri() {
 			# https://shadowsocks.org/doc/sip002.html
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
-			params="$(jsonSelect url '.searchParams')"
 
 			jsonSetjson config \
 				'$ARGS.positional[0] as $url
-				| $ARGS.positional[1] as $params
+				| $url.searchParams as $params
 				| .type="shadowsocks"
 				| .tag=$url.hash
 				| .server=$url.host
@@ -318,13 +319,15 @@ parse_uri() {
 					| .method=$data[0]
 					| .password=$data[1]
 				end
-				# plugin plugin_opts
-				| if ($params.plugin|length) > 0 then
-					($params.plugin | urid | split(";")) as $data
-					| .plugin=($data[0] | if . == "simple-obfs" then "obfs-local" else . end)
-					| .plugin_opts=($data[1:] | join(";"))
+				| if ($params|length) > 0 then
+					# plugin plugin_opts
+					| if ($params.plugin|length) > 0 then
+						($params.plugin | urid | split(";")) as $data
+						| .plugin=($data[0] | if . == "simple-obfs" then "obfs-local" else . end)
+						| .plugin_opts=($data[1:] | join(";"))
+					else . end
 				else . end' \
-				"$url" "$params"
+				"$url"
 		;;
 		trojan)
 			# https://p4gefau1t.github.io/trojan-go/developer/url/

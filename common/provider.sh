@@ -163,7 +163,7 @@ buildURL() {
 
 # func <var> <uri>
 parse_uri() {
-	echo "$1" | grep -qE "^(config|url|uri|type|body|ss_body|ss_lable|transport_type|transport_depath|tls_type)$" &&
+	echo "$1" | grep -qE "^(config|url|uri|type|body|ss_body|ss_lable)$" &&
 		{ logs err "parse_uri: Variable name '$1' is conflict.\n"; return 1; }
 	local config='{}' url
 	[ -n "$1" ] && eval "$1=''" || return 1
@@ -333,52 +333,42 @@ parse_uri() {
 			# https://p4gefau1t.github.io/trojan-go/developer/url/
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
-			params="$(jsonSelect url '.searchParams')"
 
-			jsonSet config \
-				'.type="trojan" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.password=$ARGS.positional[3] |
-				.tls.enabled=true' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-				"$(urldecode "$(jsonSelect url '.username')" )"
-			# tls
-			isEmpty "$(jsonSelect params '.sni')" ||
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			# transport
-			local transport_type="$(jsonSelect params '.type')"
-			if ! isEmpty "$transport_type" && [ "$transport_type" != "tcp" ]; then
-				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
-				case "$transport_type" in
-					grpc)
-						isEmpty "$(jsonSelect params '.serviceName')" ||
-							jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
-					;;
-					ws)
-						isEmpty "$(jsonSelect params '.host')" ||
-							jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
-						if ! isEmpty "$(jsonSelect params '.path')"; then
-							local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
-							if echo "$transport_depath" | grep -qE "\?ed="; then
-								jsonSet config \
-									'. as $config |
-									$ARGS.positional[0]|split("?ed=") as $data |
-									$config |
-									.transport.early_data_header_name="Sec-WebSocket-Protocol" |
-									.transport.max_early_data=($data[1]|tonumber) |
-									.transport.path="/"+$data[0]' \
-									"${transport_depath#/}"
-							else
-								jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${transport_depath#/}"
-							fi
-						fi
-					;;
-				esac
-			fi
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| $url.searchParams as $params
+				| .type="trojan"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				| .password=($url.username|urid)
+				| .tls.enabled=true
+				| if ($params|length) > 0 then
+					# tls
+					if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+					# transport
+					| if ($params.type|length > 0) and ($params.type != "tcp") then
+						($params.type|urid) as $type
+						| .transport.type=$type
+						| if $type == "grpc" then
+							.transport.service_name=($params.serviceName|urid)
+						elif $type == "ws" then
+							if ($params.host|length) > 0 then .transport.headers.Host=($params.host|urid) else . end
+							| if ($params.path|length) > 0 then
+								($params.path|urid) as $path
+								| if ($path | test("\\?ed=")) then
+									($path | split("?ed=")) as $data
+									| .transport.early_data_header_name="Sec-WebSocket-Protocol"
+									| .transport.max_early_data=($data[1]|tonumber)
+									| .transport.path=$data[0]
+								else
+									.transport.path=$path
+								end
+							else . end
+						else . end
+					else . end
+				else . end' \
+				"$url"
 		;;
 		tuic)
 			# https://github.com/daeuniverse/dae/discussions/182

@@ -199,42 +199,35 @@ parse_uri() {
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 			params="$(jsonSelect url '.searchParams')"
 
-			if ! validation features 'with_quic' || [ -n "$(jsonSelect params '.protocol')" -a "$(jsonSelect params '.protocol')" != "udp" ]; then
-				if validation features 'with_quic'; then
+			if validation features 'with_quic'; then
+				if [ "$(jsonSelect params '(.protocol|length) > 0 and .protocol != "udp"')" = "true" ]; then
 					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
 					return 1
-				else
-					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
-					return 1
 				fi
+			else
+				logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+				return 1
 			fi
 
-			jsonSet config \
-				'.type="hysteria" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.up_mbps=($ARGS.positional[3]|tonumber) |
-				.down_mbps=($ARGS.positional[4]|tonumber) |
-				.tls.enabled=true' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-				"$(jsonSelect params '.upmbps')" \
-				"$(jsonSelect params '.downmbps')"
-			# auth_str
-			isEmpty "$(jsonSelect params '.auth')" ||
-				jsonSet config '.auth_str=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.auth')" )"
-			# obfs
-			isEmpty "$(jsonSelect params '.obfsParam')" ||
-				jsonSet config '.obfs=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.obfsParam')" )"
-			# tls
-			isEmpty "$(jsonSelect params '.peer')" ||
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.peer')" )"
-			isEmpty "$(jsonSelect params '.insecure')" ||
-				jsonSet config '.tls.insecure=($ARGS.positional[0]|(. == "1" or . == "true"))' "$(jsonSelect params '.insecure')"
-			isEmpty "$(jsonSelect params '.alpn')" ||
-				jsonSet config '.tls.alpn=$ARGS.positional[0]' "$(jsonSelect params '.alpn')"
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| $ARGS.positional[1] as $params
+				| .type="hysteria"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				| .up_mbps=($params.upmbps|tonumber)
+				| .down_mbps=($params.downmbps|tonumber)
+				# obfs
+				| if ($params.obfsParam|length) > 0 then .obfs=($params.obfsParam|urid) else . end
+				# auth_str
+				| if ($params.auth|length) > 0 then .auth_str=($params.auth|urid) else . end
+				# tls
+				| .tls.enabled=true
+				| if ($params.peer|length) > 0 then .tls.server_name=($params.peer|urid) else . end
+				| if ($params.insecure|test("^(1|true)$") ) then .tls.insecure=true else . end
+				| if ($params.alpn|length) > 0 then .tls.alpn=$params.alpn else . end' \
+				"$url" "$params"
 		;;
 		hysteria2|hy2)
 			# https://v2.hysteria.network/docs/developers/URI-Scheme/

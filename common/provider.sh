@@ -277,22 +277,27 @@ parse_uri() {
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
-			jsonSet config \
-				'.type="socks" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.version=$ARGS.positional[3]' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-				"$(echo "$type" | $SED -En 's,^socks(4a?|5h?)?$,\1,;s|^5h$|5|;s|^$|5|;p')"
-			# username password
-			if ! isEmpty "$(jsonSelect url '.username')"; then
-				jsonSet config '.username=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )"
-				isEmpty "$(jsonSelect url '.password')" ||
-					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
-			fi
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| .type="socks"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				| .version=(
+					$url.protocol
+					| if test("5") then "5"
+					elif test("4a") then "4a"
+					elif test("4") then "4"
+					else "5" end
+				)
+				# username password
+				| if ($url.username|type) == "string" and ($url.username|length) > 0 then
+					.username=($url.username|urid)
+					| if ($url.password|type) == "string" and ($url.password|length) > 0 then
+						.password=($url.password|urid)
+					else . end
+				else . end' \
+				"$url"
 		;;
 		ss)
 			# Shadowrocket format

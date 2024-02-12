@@ -240,31 +240,29 @@ parse_uri() {
 				return 1
 			fi
 
-			jsonSet config \
-				'.type="hysteria2" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.tls.enabled=true' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')"
-			# password
-			if ! isEmpty "$(jsonSelect url '.username')"; then
-				isEmpty "$(jsonSelect url '.password')" &&
-					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username')" )" ||
-					jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.username'):$(jsonSelect url '.password')" )"
-			fi
-			# obfs
-			isEmpty "$(jsonSelect params '.obfs')" ||
-				jsonSet config '.obfs.type=$ARGS.positional[0]' "$(jsonSelect params '.obfs')"
-			isEmpty "$(jsonSelect params '.["obfs-password"]')" ||
-				jsonSet config '.obfs.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.["obfs-password"]')" )"
-			# tls
-			isEmpty "$(jsonSelect params '.sni')" ||
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			isEmpty "$(jsonSelect params '.insecure')" ||
-				jsonSet config '.tls.insecure=($ARGS.positional[0]|(. == "1"))' "$(jsonSelect params '.insecure')"
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| $ARGS.positional[1] as $params
+				| .type="hysteria2"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				# password
+				| if ($url.username|length) > 0 then
+					if ($url.password|length) > 0 then
+						.password=($url.username + ":" + $url.password | urid)
+					else
+						.password=($url.username|urid)
+					end
+				else . end
+				# obfs
+				| if ($params.obfs|length) > 0 then .obfs.type=$params.obfs else . end
+				| if ($params.["obfs-password"]|length) > 0 then .obfs.password=($params.["obfs-password"]|urid) else . end
+				# tls
+				| .tls.enabled=true
+				| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+				| if $params.insecure == "1" then .tls.insecure=true else . end' \
+				"$url" "$params"
 		;;
 		socks|socks4|socks4a|socks5|socks5h)
 			url="$(parseURL "$uri")"

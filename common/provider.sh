@@ -374,38 +374,33 @@ parse_uri() {
 			# https://github.com/daeuniverse/dae/discussions/182
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
-			params="$(jsonSelect url '.searchParams')"
 
 			if ! validation features 'with_quic'; then
 				logs warn "parse_uri: Skipping unsupported TUIC node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
 				return 1
 			fi
 
-			jsonSet config \
-				'.type="tuic" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.uuid=$ARGS.positional[3] |
-				.tls.enabled=true' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-				"$(jsonSelect url '.username')"
-			# password
-			isEmpty "$(jsonSelect url '.password')" ||
-				jsonSet config '.password=$ARGS.positional[0]' "$(urldecode "$(jsonSelect url '.password')" )"
-			# congestion_control
-			isEmpty "$(jsonSelect params '.congestion_control')" ||
-				jsonSet config '.congestion_control=$ARGS.positional[0]' "$(jsonSelect params '.congestion_control')"
-			# udp_relay_mode
-			isEmpty "$(jsonSelect params '.udp_relay_mode')" ||
-				jsonSet config '.udp_relay_mode=$ARGS.positional[0]' "$(jsonSelect params '.udp_relay_mode')"
-			# tls
-			isEmpty "$(jsonSelect params '.sni')" ||
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			isEmpty "$(jsonSelect params '.alpn')" ||
-				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.alpn')" )"
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| $url.searchParams as $params
+				| .type="tuic"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				| .uuid=$url.username
+				| .tls.enabled=true
+				# password
+				| if ($url.password|length) > 0 then .password=($url.password|urid) else . end
+				| if ($params|length) > 0 then
+					# congestion_control
+					if ($params.congestion_control|length) > 0 then .congestion_control=$params.congestion_control else . end
+					# udp_relay_mode
+					| if ($params.udp_relay_mode|length) > 0 then .udp_relay_mode=$params.udp_relay_mode else . end
+					# tls
+					| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+					| if ($params.alpn|length) > 0 then .tls.alpn=($params.alpn | urid | split(",")) else . end
+				else . end' \
+				"$url"
 		;;
 		vless)
 			# https://github.com/XTLS/Xray-core/discussions/716

@@ -199,7 +199,7 @@ parse_uri() {
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			if validation features 'with_quic'; then
-				if [ "$(jsonSelect url '(.searchParams.protocol|length) > 0 and .searchParams.protocol != "udp"')" = "true" ]; then
+				if [ "$(jsonSelect url '.searchParams.protocol | (length > 0) and (. != "udp")')" = "true" ]; then
 					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
 					return 1
 				fi
@@ -406,96 +406,82 @@ parse_uri() {
 			# https://github.com/XTLS/Xray-core/discussions/716
 			url="$(parseURL "$uri")"
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
-			params="$(jsonSelect url '.searchParams')"
 
-			if [ "$(jsonSelect params '.type')" = "kcp" ]; then
-				logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
-				return 1
-			elif [ "$(jsonSelect params '.type')" = "quic" ]; then
-				if validation features 'with_quic'; then
-					if [ -n "$(jsonSelect params '.quicSecurity')" -a "$(jsonSelect params '.quicSecurity')" != "none" ]; then
-						logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
-						return 1
-					fi
-				else
-					logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+			case "$(jsonSelect url '.searchParams.type')" in
+				kcp)
+					logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
 					return 1
-				fi
-			fi
-
-			jsonSet config \
-				'.type="vless" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.uuid=$ARGS.positional[3]' \
-				"$(isEmpty "$(jsonSelect url '.hash')" && calcStringMD5 "$uri" || urldecode "$(jsonSelect url '.hash')" )" \
-				"$(jsonSelect url '.host')" \
-				"$(jsonSelect url '.port')" \
-				"$(urldecode "$(jsonSelect url '.username')" )"
-			local tls_type="$(jsonSelect params '.security')"
-			# flow
-			if echo "$tls_type" | grep -qE "^(tls|reality)$"; then
-				isEmpty "$(jsonSelect params '.flow')" ||
-					jsonSet config '.flow=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.flow')" )"
-			fi
-			# tls
-			echo "$tls_type" | grep -qE "^(tls|xtls|reality)$" &&
-				jsonSet config '.tls.enabled=true'
-			isEmpty "$(jsonSelect params '.sni')" ||
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.sni')" )"
-			isEmpty "$(jsonSelect params '.alpn')" ||
-				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.alpn')" )"
-			if validation features 'with_utls'; then
-				isEmpty "$(jsonSelect params '.fp')" ||
-					jsonSet config '.tls.utls.enabled=true|.tls.utls.fingerprint=$ARGS.positional[0]' "$(jsonSelect params '.fp')"
-			fi
-			# reality
-			if [ "$tls_type" = "reality" ]; then
-				jsonSet config '.reality.enabled=true'
-				isEmpty "$(jsonSelect params '.pbk')" ||
-					jsonSet config '.reality.public_key=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.pbk')" )"
-				isEmpty "$(jsonSelect params '.sid')" ||
-					jsonSet config '.reality.short_id=$ARGS.positional[0]' "$(jsonSelect params '.sid')"
-			fi
-			# transport
-			local transport_type="$(jsonSelect params '.type')"
-			if ! isEmpty "$transport_type" && [ "$transport_type" != "tcp" ]; then
-				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
-			fi
-			case "$transport_type" in
-				grpc)
-					isEmpty "$(jsonSelect params '.serviceName')" ||
-						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.serviceName')" )"
 				;;
-				tcp|http)
-					if [ "$transport_type" = "http" -o "$(jsonSelect params '.headerType')" = "http" ]; then
-						isEmpty "$(jsonSelect params '.host')" ||
-							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(urldecode "$(jsonSelect params '.host')" )"
-						isEmpty "$(jsonSelect params '.path')" ||
-							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.path')" | $SED 's|^/||' )"
-					fi
-				;;
-				ws)
-					isEmpty "$(jsonSelect params '.host')" ||
-						jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(urldecode "$(jsonSelect params '.host')" )"
-					if ! isEmpty "$(jsonSelect params '.path')"; then
-						local transport_depath="$(urldecode "$(jsonSelect params '.path')" )"
-						if echo "$transport_depath" | grep -qE "\?ed="; then
-							jsonSet config \
-								'. as $config |
-								$ARGS.positional[0]|split("?ed=") as $data |
-								$config |
-								.transport.early_data_header_name="Sec-WebSocket-Protocol" |
-								.transport.max_early_data=($data[1]|tonumber) |
-								.transport.path="/"+$data[0]' \
-								"${transport_depath#/}"
-						else
-							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${transport_depath#/}"
+				quic)
+					if validation features 'with_quic'; then
+						if [ "$(jsonSelect url '.searchParams.quicSecurity | (length > 0) and (. != "none")')" = "true" ]; then
+							logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
+							return 1
 						fi
+					else
+						logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
+						return 1
 					fi
 				;;
 			esac
+
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| $ARGS.positional[1] as $utls
+				| $url.searchParams as $params
+				| .type="vless"
+				| .tag=$url.hash
+				| .server=$url.host
+				| .server_port=$url.port
+				| .uuid=$url.username
+				| if ($params|length) > 0 then
+					$params.security as $security
+					# flow
+					| if ($security | test("^(tls|reality)$")) then
+						if ($params.flow|length) > 0 then .flow=($params.flow|urid) else . end
+					else . end
+					# tls
+					| if ($security | test("^(tls|xtls|reality)$")) then .tls.enabled=true else . end
+					| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+					| if ($params.alpn|length) > 0 then .tls.alpn=($params.alpn | urid | split(",")) else . end
+					| if $utls and ($params.fp|length > 0) then
+						.tls.utls.enabled=true
+						| .tls.utls.fingerprint=$params.fp
+					else . end
+					# reality
+					| if $security == "reality" then
+						.reality.enabled=true
+						| if ($params.pbk|length) > 0 then .reality.public_key=($params.pbk|urid) else . end
+						| if ($params.sid|length) > 0 then .reality.short_id=$params.sid else . end
+					else . end
+					# transport
+					| if ($params.type|length > 0) and ($params.type != "tcp") then
+						($params.type|urid) as $type
+						| .transport.type=$type
+						| if $type == "grpc" then
+							.transport.service_name=($params.serviceName|urid)
+						elif ($type | test("^(tcp|http)$")) then
+							if ($type == "http") or ($params.headerType == "http") then
+								if ($params.host|length) > 0 then .transport.host=($params.host | urid | split(",")) else . end
+								| if ($params.path|length) > 0 then .transport.path=($params.path|urid) else . end
+							else . end
+						elif $type == "ws" then
+							if ($params.host|length) > 0 then .transport.headers.Host=($params.host|urid) else . end
+							| if ($params.path|length) > 0 then
+								($params.path|urid) as $path
+								| if ($path | test("\\?ed=")) then
+									($path | split("?ed=")) as $data
+									| .transport.early_data_header_name="Sec-WebSocket-Protocol"
+									| .transport.max_early_data=($data[1]|tonumber)
+									| .transport.path=$data[0]
+								else
+									.transport.path=$path
+								end
+							else . end
+						else . end
+					else . end
+				else . end' \
+				"$url" "$(validation features 'with_utls' && echo true || echo false)"
 		;;
 		vmess)
 			# Shadowrocket format

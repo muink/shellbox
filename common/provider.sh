@@ -81,7 +81,7 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 
 # func <url>
 parseURL() {
-	isEmpty "$1" && return 1
+	[ -n "$1" ] || return 1
 	local url="$1"
 	local protocol userinfo username password host port path search hash
 
@@ -95,6 +95,7 @@ parseURL() {
 	# host    /^[\w\-\.]+/
 	# port    /^:(\d+)/
 	eval "$(echo "$url" | $SED -En "s,^(([^@]+)@)?([[:alnum:]_\.-]+|\[[[:xdigit:]:\.]+\])(:([0-9]+))?(.*),userinfo='\2';host='\3';port='\5';url='\6',p")"
+	host="$(echo "$host" | tr -d '[]')"
 	if [ -z "$port" ]; then
 		case "$protocol" in
 			http) port=80 ;;
@@ -146,7 +147,7 @@ buildURL() {
 
 	scheme="$(jsonSelect obj '.protocol')"
 	userinfo="$(jsonSelect obj 'if .username then (.username|@uri) else "" end + if .password then ":" + (.password|@uri) else "" end')"
-	hostport="$(jsonSelect obj '.host + ":" + (.port|tostring)')"
+	hostport="$(jsonSelect obj 'if (.host | test(":")) then "[\(.host)]" else .host end + ":" + (.port|tostring)')"
 	path="$(jsonSelect obj '.path')"
 	query="$(urlencode_params "$(jsonSelect obj '.searchParams')" )"
 	fragment="$(jsonSelect obj '.hash')"
@@ -547,11 +548,6 @@ parse_uri() {
 			return 1
 		;;
 	esac
-
-	if ! isEmpty "$config"; then
-		isEmpty "$(jsonSelect config '.server')" ||
-			jsonSet config '.server=$ARGS.positional[0]' "$(jsonSelect config '.server' | tr -d '[]')"
-	fi
 
 	eval "$1=\"\$config\""
 }

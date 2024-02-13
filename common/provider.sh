@@ -484,7 +484,7 @@ parse_uri() {
 						"Skipping unsupported VMess node \\x27\($uri)\\x27."
 					elif .net == "quic" then
 						if $quic then
-							if ((.type|length > 0) and .type != "none") or (.path|length) > 0 then
+							if ((.type|length) > 0 and .type != "none") or (.path|length) > 0 then
 								"Skipping unsupported VMess node \\x27\($uri)\\x27."
 							else 0 end
 						else "Skipping unsupported VMess node \\x27\($uri)\\x27.\\n\\tPlease rebuild sing-box with QUIC support!" end

@@ -22,11 +22,11 @@ verifyProviders() {
 							last(
 								label $required | ["url","tag"] | foreach .[] as $k (null;
 									$provider[$k] |
-									if ($k == "url") then
+									if $k == "url" then
 										if (type == "string") and (length > 0) then 0 else
 											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
 										end
-									elif ($k == "tag") then
+									elif $k == "tag" then
 										if (type == "string") and test("^[[:word:]]+$") then 0 else
 											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
 										end
@@ -38,7 +38,7 @@ verifyProviders() {
 								$provider | keys_unsorted |
 								last(
 									label $optional | foreach .[] as $k (null;
-										if ($k | test("^(prefix|ua)$") ) then
+										if ($k | test("^(prefix|ua)$")) then
 											$provider[$k] |
 											if type == "null" then 0
 											elif type == "string" then 0 else
@@ -68,7 +68,7 @@ verifyProviders() {
 															$filters[$q] |
 															if (type == "object") and (length > 0) then
 																# Field check
-																if ((.action|type) != "string") or (.action | test("^(include|exclude)$") | not) then
+																if (.action|type) != "string" or (.action | test("^(include|exclude)$") | not) then
 																	"Invalid field of the key [\"action\"] for filter [\($q|tostring)] for provider [\($i|tostring)].", break $optional_filter
 																elif (.regex|type) != "string" then
 																	"Invalid field of the key [\"regex\"] for filter [\($q|tostring)] for provider [\($i|tostring)].", break $optional_filter

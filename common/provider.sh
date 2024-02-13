@@ -163,9 +163,9 @@ buildURL() {
 
 # func <var> <uri>
 parse_uri() {
-	echo "$1" | grep -qE "^(config|url|uri|type|body|ss_body|ss_lable)$" &&
+	echo "$1" | grep -qE "^(config|url|rcode|uri|type|body|ss_body|ss_lable)$" &&
 		{ logs err "parse_uri: Variable name '$1' is conflict.\n"; return 1; }
-	local config='{}' url
+	local config='{}' url rcode
 	[ -n "$1" ] && eval "$1=''" || return 1
 	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*)://||')"
 
@@ -496,93 +496,66 @@ parse_uri() {
 				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			}
-			[ "$(jsonSelect url '.v')" = "2" ] || {
-				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
-				return 1
-			}
-			if [ "$(jsonSelect url '.net')" = "kcp" ]; then
-				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
-				return 1
-			elif [ "$(jsonSelect url '.net')" = "quic" ]; then
-				if validation features 'with_quic'; then
-					if [ -n "$(jsonSelect url '.type')" -a "$(jsonSelect url '.type')" != "none" ] || [ -n "$(jsonSelect url '.path')" ]; then
-						logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
-						return 1
-					fi
-				else
-					logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n\tPlease rebuild sing-box with QUIC support!\n"
-					return 1
-				fi
-			fi
+			jsonSelect url \
+				'$ARGS.positional[0] as $uri
+				| $ARGS.positional[1] as $quic
+				| if (.v|tostring) == "2" then
+					if .net == "kcp" then
+						"Skipping unsupported VMess node \\x27\($uri)\\x27."
+					elif .net == "quic" then
+						if $quic then
+							if ((.type|length > 0) and (.type != "none")) or (.path|length > 0) then
+								"Skipping unsupported VMess node \\x27\($uri)\\x27."
+							else 0 end
+						else "Skipping unsupported VMess node \\x27\($uri)\\x27.\\n\\tPlease rebuild sing-box with QUIC support!" end
+					else 0 end
+				else "Skipping unsupported VMess node \\x27\($uri)\\x27." end' \
+				"$uri" "$(validation features 'with_quic' && echo true || echo false)"
+			[ "$rcode" = "0" ] || { logs warn "parse_uri: $rcode\n"; return 1; }
 
-			jsonSet config \
-				'.type="vmess" |
-				.tag=$ARGS.positional[0] |
-				.server=$ARGS.positional[1] |
-				.server_port=($ARGS.positional[2]|tonumber) |
-				.uuid=$ARGS.positional[3]' \
-				"$(isEmpty "$(jsonSelect url '.ps')" && calcStringMD5 "$uri" || jsonSelect url '.ps' )" \
-				"$(jsonSelect url '.add')" \
-				"$(jsonSelect url '.port')" \
-				"$(jsonSelect url '.id')"
-			# security
-			isEmpty "$(jsonSelect url '.scy')" &&
-				jsonSet config '.security="auto"' ||
-				jsonSet config '.security=$ARGS.positional[0]' "$(jsonSelect url '.scy')"
-			# alter_id
-			isEmpty "$(jsonSelect url '.aid')" ||
-				jsonSet config '.alter_id=($ARGS.positional[0]|tonumber)' "$(jsonSelect url '.aid')"
-			# global_padding
-			jsonSet config '.global_padding=true'
-			# tls
-			[ "$(jsonSelect url '.tls')" = "tls" ] &&
-				jsonSet config '.tls.enabled=true'
-			if ! isEmpty "$(jsonSelect url '.sni')"; then
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(jsonSelect url '.sni')"
-			elif ! isEmpty "$(jsonSelect url '.host')"; then
-				jsonSet config '.tls.server_name=$ARGS.positional[0]' "$(jsonSelect url '.host')"
-			fi
-			isEmpty "$(jsonSelect url '.alpn')" ||
-				jsonSet config '.tls.alpn=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.alpn')"
-			# transport
-			local transport_type="$(jsonSelect url '.net')"
-			if ! isEmpty "$transport_type" && [ "$transport_type" != "tcp" ]; then
-				jsonSet config '.transport.type=$ARGS.positional[0]' "$transport_type"
-			fi
-			case "$transport_type" in
-				grpc)
-					isEmpty "$(jsonSelect url '.path')" ||
-						jsonSet config '.transport.service_name=$ARGS.positional[0]' "$(jsonSelect url '.path')"
-				;;
-				tcp|h2)
-					if [ "$transport_type" = "h2" -o "$(jsonSelect url '.type')" = "http" ]; then
-						jsonSet config '.transport.type="http"'
-						isEmpty "$(jsonSelect url '.host')" ||
-							jsonSet config '.transport.host=($ARGS.positional[0]|split(","))' "$(jsonSelect url '.host')"
-						isEmpty "$(jsonSelect url '.path')" ||
-							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "$(jsonSelect url '.path' | $SED 's|^/||')"
-					fi
-				;;
-				ws)
-					isEmpty "$(jsonSelect url '.host')" ||
-						jsonSet config '.transport.headers.Host=$ARGS.positional[0]' "$(jsonSelect url '.host')"
-					if ! isEmpty "$(jsonSelect url '.path')"; then
-						local transport_depath="$(jsonSelect url '.path')"
-						if echo "$transport_depath" | grep -qE "\?ed="; then
-							jsonSet config \
-								'. as $config |
-								$ARGS.positional[0]|split("?ed=") as $data |
-								$config |
-								.transport.early_data_header_name="Sec-WebSocket-Protocol" |
-								.transport.max_early_data=($data[1]|tonumber) |
-								.transport.path="/"+$data[0]' \
-								"${transport_depath#/}"
+			jsonSetjson config \
+				'$ARGS.positional[0] as $url
+				| .type="vmess"
+				| .tag=$url.ps
+				| .server=$url.add
+				| .server_port=($url.port|tonumber)
+				| .uuid=$url.id
+				# security
+				| if $url.scy then .security=$url.scy else .security="auto" end
+				# alter_id
+				| if $url.aid then .alter_id=($url.aid|tonumber) else . end
+				# global_padding
+				| .global_padding=true
+				# tls
+				| if $url.tls == "tls" then .tls.enabled=true else . end
+				| if $url.sni or $url.host then .tls.server_name=($url.sni // $url.host) else . end
+				| if $url.alpn then .tls.alpn=($url.alpn | split(",")) else . end
+				# transport
+				| $url.net as $type
+				| if $type and ($type != "tcp") then .transport.type=$type else . end
+				| if $type == "grpc" then
+					.transport.service_name=$url.path
+				elif ($type | test("^(tcp|h2)$")) then
+					if ($type == "h2") or ($url.type == "http") then
+						.transport.type="http"
+						| if $url.host then .transport.host=($url.host | split(",")) else . end
+						| if $url.path then .transport.path=$url.path else . end
+					else . end
+				elif $type == "ws" then
+					if $url.host then .transport.headers.Host=$url.host else . end
+					| $url.path as $path
+					| if $path then
+						| if ($path | test("\\?ed=")) then
+							($path | split("?ed=")) as $data
+							| .transport.early_data_header_name="Sec-WebSocket-Protocol"
+							| .transport.max_early_data=($data[1]|tonumber)
+							| .transport.path=$data[0]
 						else
-							jsonSet config '.transport.path="/"+$ARGS.positional[0]' "${transport_depath#/}"
-						fi
-					fi
-				;;
-			esac
+							.transport.path=$path
+						end
+					else . end
+				else . end' \
+				"$url"
 		;;
 		*)
 			logs warn "parse_uri: Skipping unsupported node '$uri'.\n"

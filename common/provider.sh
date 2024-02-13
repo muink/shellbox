@@ -83,7 +83,7 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 parseURL() {
 	isEmpty "$1" && return 1
 	local url="$1"
-	local protocol userinfo username password host port fpath path search hash
+	local protocol userinfo username password host port path search hash
 
 	# hash / URI fragment    /#(.+)$/
 	hash="$(echo "$url" | $SED -En 's|.*#(.+)$|\1|p')"
@@ -114,24 +114,24 @@ parseURL() {
 
 	# path    /^(\/[^\?\#]*)/
 	# search / URI query    /^\?([^#]+)/
-	eval "$(echo "$url" | $SED -En "s|^(/([^\?#]*))?(\?([^#]+))?.*|fpath='\1';path='\2';search='\4'|p")"
-	[ -n "$fpath" ] && fpath=true || fpath=false
+	eval "$(echo "$url" | $SED -En "s|^(/[^\?#]*)?(\?([^#]+))?.*|path='\1';search='\3'|p")"
 
 	# pre-decode
-	[ -n "$path" ] && path="$(urldecode "$path")"
 	[ -n "$hash" ] && hash="$(urldecode "$hash")" || hash="$(calcStringMD5 "$url")"
+	[ -n "$username" ] && username="\"$(urldecode "$username")\"" || username=null
+	[ -n "$password" ] && password="\"$(urldecode "$password")\"" || password=null
+	[ -n "$path" ] && path="\"$(urldecode "$path")\"" || path=null
 	#search
 
 	echo "$(cat <<-EOF
 		{
 			"protocol": "$protocol",
+			"hash": "$hash",
 			"host": "$host",
 			"port": $port,
-			"username": "$username",
-			"password": "$password",
-			"fpath": $fpath,
-			"path": "$path",
-			"hash": "$hash",
+			"username": $username,
+			"password": $password,
+			"path": $path,
 			"searchParams": $(urldecode_params "$search" )
 		}
 	EOF
@@ -145,11 +145,9 @@ buildURL() {
 	local scheme userinfo hostport path query fragment
 
 	scheme="$(jsonSelect obj '.protocol')"
-	userinfo="$(jsonSelect obj '.username + if (.password|length) > 0 then ":" + .password else "" end')"
+	userinfo="$(jsonSelect obj 'if .username then (.username|@uri) else "" end + if .password then ":" + (.password|@uri) else "" end')"
 	hostport="$(jsonSelect obj '.host + ":" + (.port|tostring)')"
-	[ -n "$(jsonSelect obj '.fpath')" ] && {
-		path="/$(urlencode "$(jsonSelect obj '.path')" )"
-	}
+	path="$(jsonSelect obj '.path')"
 	query="$(urlencode_params "$(jsonSelect obj '.searchParams')" )"
 	fragment="$(jsonSelect obj '.hash')"
 	if validation md5 "$fragment"; then

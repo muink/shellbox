@@ -27,7 +27,7 @@ verifyProviders() {
 											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
 										end
 									elif ($k == "tag") then
-										if (type == "string") and (length > 0) and test("^([[:word:]]+)$") then 0 else
+										if (type == "string") and test("^[[:word:]]+$") then 0 else
 											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
 										end
 									else 0 end

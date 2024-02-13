@@ -181,12 +181,8 @@ parse_uri() {
 				| .server=$url.host
 				| .server_port=$url.port
 				# username password
-				| if ($url.username|type) == "string" and ($url.username|length) > 0 then
-					.username=($url.username|urid)
-					| if ($url.password|type) == "string" and ($url.password|length) > 0 then
-						.password=($url.password|urid)
-					else . end
-				else . end
+				| if ($url.username|length) > 0 then .username=($url.username|urid) else . end
+				| if ($url.password|length) > 0 then .password=($url.password|urid) else . end
 				# path
 				| if $url.fpath then .path="/"+$url.path else . end
 				# tls
@@ -199,7 +195,7 @@ parse_uri() {
 			[ -z "$url" ] && { logs warn "parse_uri: node '$uri' is not a valid format.\n"; return 1; }
 
 			if validation features 'with_quic'; then
-				if [ "$(jsonSelect url '.searchParams.protocol | (length > 0) and (. != "udp")')" = "true" ]; then
+				if [ "$(jsonSelect url '.searchParams.protocol | length > 0 and . != "udp"')" = "true" ]; then
 					logs warn "parse_uri: Skipping unsupported hysteria node '$uri'.\n"
 					return 1
 				fi
@@ -217,17 +213,15 @@ parse_uri() {
 				| .server_port=$url.port
 				| .up_mbps=($params.upmbps|tonumber)
 				| .down_mbps=($params.downmbps|tonumber)
+				# obfs
+				| if $params.obfsParam then .obfs=($params.obfsParam|urid) else . end
+				# auth_str
+				| if $params.auth then .auth_str=($params.auth|urid) else . end
+				# tls
 				| .tls.enabled=true
-				| if ($params|length) > 0 then
-					# obfs
-					| if ($params.obfsParam|length) > 0 then .obfs=($params.obfsParam|urid) else . end
-					# auth_str
-					| if ($params.auth|length) > 0 then .auth_str=($params.auth|urid) else . end
-					# tls
-					| if ($params.peer|length) > 0 then .tls.server_name=($params.peer|urid) else . end
-					| if ($params.insecure|test("^(1|true)$") ) then .tls.insecure=true else . end
-					| if ($params.alpn|length) > 0 then .tls.alpn=$params.alpn else . end
-				else . end' \
+				| if $params.peer then .tls.server_name=($params.peer|urid) else . end
+				| if ($params.insecure | . == "1" or . == "true") then .tls.insecure=true else . end
+				| if $params.alpn then .tls.alpn=$params.alpn else . end' \
 				"$url"
 		;;
 		hysteria2|hy2)

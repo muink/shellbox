@@ -293,8 +293,8 @@ parse_uri() {
 				| .server_port=$url.port
 				# method password
 				| if $url.password then
-					.password=$url.password
-					| .method=$url.username
+					.method=$url.username
+					| .password=$url.password
 				else
 					($url.username | @base64d | split(":")) as $userinfo
 					| .method=$userinfo[0]
@@ -393,7 +393,7 @@ parse_uri() {
 				;;
 				quic)
 					if validation features 'with_quic'; then
-						if [ "$(jsonSelect url '.searchParams.quicSecurity | (length > 0) and (. != "none")')" = "true" ]; then
+						if [ "$(jsonSelect url '.searchParams.quicSecurity | length > 0 and . != "none"')" = "true" ]; then
 							logs warn "parse_uri: Skipping unsupported VLESS node '$uri'.\n"
 							return 1
 						fi
@@ -484,7 +484,7 @@ parse_uri() {
 						"Skipping unsupported VMess node \\x27\($uri)\\x27."
 					elif .net == "quic" then
 						if $quic then
-							if ((.type|length > 0) and .type != "none") or (.path|length > 0) then
+							if ((.type|length > 0) and .type != "none") or (.path|length) > 0 then
 								"Skipping unsupported VMess node \\x27\($uri)\\x27."
 							else 0 end
 						else "Skipping unsupported VMess node \\x27\($uri)\\x27.\\n\\tPlease rebuild sing-box with QUIC support!" end
@@ -502,30 +502,34 @@ parse_uri() {
 				| .server_port=($url.port|tonumber)
 				| .uuid=$url.id
 				# security
-				| if $url.scy then .security=$url.scy else .security="auto" end
+				| if ($url.scy|length) > 0 then .security=$url.scy else .security="auto" end
 				# alter_id
 				| if $url.aid then .alter_id=($url.aid|tonumber) else . end
 				# global_padding
 				| .global_padding=true
 				# tls
 				| if $url.tls == "tls" then .tls.enabled=true else . end
-				| if $url.sni or $url.host then .tls.server_name=($url.sni // $url.host) else . end
-				| if $url.alpn then .tls.alpn=($url.alpn | split(",")) else . end
+				| if ($url.sni|length) > 0 then
+					.tls.server_name=$url.sni
+				else
+					if ($url.host|length) > 0 then .tls.server_name=$url.host else . end
+				end
+				| if ($url.alpn|length) > 0 then .tls.alpn=($url.alpn | split(",")) else . end
 				# transport
 				| $url.net as $type
-				| if $type and $type != "tcp" then .transport.type=$type else . end
+				| if ($type|length) > 0 and $type != "tcp" then .transport.type=$type else . end
 				| if $type == "grpc" then
 					.transport.service_name=$url.path
 				elif ($type | test("^(tcp|h2)$")) then
 					if $type == "h2" or $url.type == "http" then
 						.transport.type="http"
-						| if $url.host then .transport.host=($url.host | split(",")) else . end
-						| if $url.path then .transport.path=$url.path else . end
+						| if ($url.host|length) > 0 then .transport.host=($url.host | split(",")) else . end
+						| if ($url.path|length) > 0 then .transport.path=$url.path else . end
 					else . end
 				elif $type == "ws" then
-					if $url.host then .transport.headers.Host=$url.host else . end
+					if ($url.host|length) > 0 then .transport.headers.Host=$url.host else . end
 					| $url.path as $path
-					| if $path then
+					| if ($path|length) > 0 then
 						if ($path | test("\\?ed=")) then
 							($path | split("?ed=")) as $data
 							| .transport.early_data_header_name="Sec-WebSocket-Protocol"
@@ -578,11 +582,6 @@ parse_provider() {
 	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
-
-	if isEmpty "$results"; then
-		logs err "parse_provider: Failed to update provider: no valid node found.\n"
-		return 1
-	fi
 
 	eval "$1=\"\$results\""
 }

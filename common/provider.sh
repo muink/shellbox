@@ -415,38 +415,39 @@ parse_uri() {
 				| .uuid=$url.username
 				| if ($params|length) > 0 then
 					$params.security as $security
-					# flow
-					| if ($security | test("^(tls|reality)$")) then
-						if ($params.flow|length) > 0 then .flow=($params.flow|urid) else . end
+					# security
+					| if ($security | . == "tls" or . == "xtls" or . == "reality") then
+						.tls.enabled=true
+						# flow
+						| if $params.flow then .flow=$params.flow else . end
 					else . end
 					# tls
-					| if ($security | test("^(tls|xtls|reality)$")) then .tls.enabled=true else . end
-					| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
-					| if ($params.alpn|length) > 0 then .tls.alpn=($params.alpn | urid | split(",")) else . end
-					| if $utls and ($params.fp|length > 0) then
+					| if $params.sni then .tls.server_name=($params.sni|urid) else . end
+					| if $params.alpn then .tls.alpn=($params.alpn | urid | split(",")) else . end
+					| if $params.fp and $utls then
 						.tls.utls.enabled=true
 						| .tls.utls.fingerprint=$params.fp
 					else . end
 					# reality
 					| if $security == "reality" then
 						.reality.enabled=true
-						| if ($params.pbk|length) > 0 then .reality.public_key=($params.pbk|urid) else . end
-						| if ($params.sid|length) > 0 then .reality.short_id=$params.sid else . end
+						| if $params.pbk then .reality.public_key=($params.pbk|urid) else . end
+						| if $params.sid then .reality.short_id=$params.sid else . end
 					else . end
 					# transport
-					| if ($params.type|length > 0) and ($params.type != "tcp") then
+					| if $params.type and $params.type != "tcp" then
 						($params.type|urid) as $type
 						| .transport.type=$type
 						| if $type == "grpc" then
 							.transport.service_name=($params.serviceName|urid)
 						elif ($type | test("^(tcp|http)$")) then
-							if ($type == "http") or ($params.headerType == "http") then
-								if ($params.host|length) > 0 then .transport.host=($params.host | urid | split(",")) else . end
-								| if ($params.path|length) > 0 then .transport.path=($params.path|urid) else . end
+							if $type == "http" or $params.headerType == "http" then
+								if $params.host then .transport.host=($params.host | urid | split(",")) else . end
+								| if $params.path then .transport.path=($params.path|urid) else . end
 							else . end
 						elif $type == "ws" then
-							if ($params.host|length) > 0 then .transport.headers.Host=($params.host|urid) else . end
-							| if ($params.path|length) > 0 then
+							if $params.host then .transport.headers.Host=($params.host|urid) else . end
+							| if $params.path then
 								($params.path|urid) as $path
 								| if ($path | test("\\?ed=")) then
 									($path | split("?ed=")) as $data

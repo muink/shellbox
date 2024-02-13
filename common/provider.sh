@@ -269,12 +269,8 @@ parse_uri() {
 					else "5" end
 				)
 				# username password
-				| if ($url.username|type) == "string" and ($url.username|length) > 0 then
-					.username=($url.username|urid)
-					| if ($url.password|type) == "string" and ($url.password|length) > 0 then
-						.password=($url.password|urid)
-					else . end
-				else . end' \
+				| if $url.username then .username=$url.username else . end
+				| if $url.password then .password=$url.password else . end' \
 				"$url"
 		;;
 		ss)

@@ -554,7 +554,7 @@ parse_uri() {
 
 # func <var> <subscription_url>
 parse_provider() {
-	echo "$1" | grep -qE "^(node|nodes|result|results|url|time|count)$" &&
+	echo "$1" | grep -qE "^(node|nodes|result|results|url|time|count|name)$" &&
 		{ logs err "parse_provider: Variable name '$1' is conflict.\n"; return 1; }
 	local node nodes result results='[]' url="$2"
 	[ -n "$1" ] && eval "$1=''" || return 1
@@ -565,12 +565,13 @@ parse_provider() {
 		return 1
 	}
 
-	local time=$($DATE -u +%s%3N) count=0
+	local time=$($DATE -u +%s%3N) count=0 name
 	for node in $nodes; do
 		[ -n "$node" ] && parse_uri result "$node"
 		isEmpty "$result" && continue
 		# filter
-		filterCheck "$(jsonSelect result '.tag')" "$FILTER" && { logs note "parse_provider: Skipping node: $(jsonSelect result '.tag').\n"; continue; }
+		name="$(jsonSelect result '.tag')"
+		filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; continue; }
 
 		jsonSetjson results ".[$count]=\$ARGS.positional[0]" "$result"
 		let count++
@@ -582,7 +583,7 @@ parse_provider() {
 	eval "$1=\"\$results\""
 }
 
-# func <namestr> [filter]
+# func <name> [filter]
 filterCheck() {
 	local name="$1" filter="$2" rcode
 	[ -n "$filter" ] || return 1

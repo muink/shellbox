@@ -103,11 +103,11 @@ updateProvider() {
 	local providers="$(jsonSelect setting '.providers')"
 	verifyProviders "$providers" || return 1
 
-	local provider provider_count="$(jsonSelect providers 'length')" count=0
+	local provider total="$(jsonSelect providers 'length')" count=0
 	local node_result UA FILTER
 
 	local time=$($DATE -u +%s%3N)
-	for i in $(seq 0 $[ $provider_count -1 ]); do
+	for i in $(seq 0 $[ $total -1 ]); do
 		provider="$(jsonSelect providers ".[$i]")"
 		# Keys: url tag #subgroup #prefix ua filter
 		for k in url tag ua filter; do
@@ -121,6 +121,6 @@ updateProvider() {
 		let count++
 	done
 	time=$[ $($DATE -u +%s%3N) - $time ]
-	logs yeah "Successfully updated $count providers of total $provider_count.\n"
+	logs yeah "Successfully updated $count providers of total $total.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
 }

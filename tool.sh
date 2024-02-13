@@ -80,14 +80,14 @@ depCheck || { pause; exit; }
 GETARGS=$($GETOPT -n $(basename $0) -o gVhue -l update,generate,version,help -- "$@")
 [ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
 eval set -- "$GETARGS"
-ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")
+ERROR=$(echo "$GETARGS" | $SED "s|'[^']*'||g;s| -- .*$||;s| --$||")
 # Duplicate options
 for ru in -h\|--help -V\|--version -g\|--generate -u\|--update; do
 	eval "echo \"\$ERROR\" | grep -qE \" ${ru%|*}[ .+]* ($ru)| ${ru#*|}[ .+]* ($ru)\"" && { err "Option '$ru' option is repeated\n"; exit; }
 done
 # Independent options
 for ru in -h\|--help -V\|--version; do
-	eval "echo \"\$ERROR\" | grep -qE \"^ ($ru) .+|.+ ($ru) .+|.+ ($ru) *\$\"" && { err "Option '$(echo "$ERROR" | sed -E "s,^.*($ru).*$,\1,")' cannot be used with other options\n"; exit; }
+	eval "echo \"\$ERROR\" | grep -qE \"^ ($ru) .+|.+ ($ru) .+|.+ ($ru) *\$\"" && { err "Option '$(echo "$ERROR" | $SED -E "s,^.*($ru).*$,\1,")' cannot be used with other options\n"; exit; }
 done
 # Conflicting options
 

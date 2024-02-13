@@ -589,15 +589,16 @@ filterCheck() {
 	[ -n "$filter" ] || return 1
 
 	rcode="$(jsonSelect filter \
-		'$ARGS.positional[0] as $name |
-		last(
-			label $out | .[] | (
-				.action as $action |
-				.regex as $regex |
-				$name | test($regex;null) | if $action == "include" then not else . end |
-				if . then true, break $out else false end
-			)
-		)' \
+		'$ARGS.positional[0] as $name
+		| def exclude:
+			def loop($i):
+				if $i >= length then empty else
+					.[$i].regex as $regex
+					| if ($name | test($regex;null)) then .[$i].action == "exclude"
+					else loop($i+1) end
+				end;
+			loop(0);
+		exclude' \
 		"$name" \
 	)"
 

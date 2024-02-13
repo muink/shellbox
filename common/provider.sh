@@ -320,20 +320,20 @@ parse_uri() {
 				| .tag=$url.hash
 				| .server=$url.host
 				| .server_port=$url.port
-				| .password=($url.username|urid)
+				| .password=$url.username
 				| .tls.enabled=true
 				| if ($params|length) > 0 then
 					# tls
-					if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+					if $params.sni then .tls.server_name=($params.sni|urid) else . end
 					# transport
-					| if ($params.type|length > 0) and ($params.type != "tcp") then
+					| if $params.type and $params.type != "tcp" then
 						($params.type|urid) as $type
 						| .transport.type=$type
 						| if $type == "grpc" then
 							.transport.service_name=($params.serviceName|urid)
 						elif $type == "ws" then
-							if ($params.host|length) > 0 then .transport.headers.Host=($params.host|urid) else . end
-							| if ($params.path|length) > 0 then
+							if $params.host then .transport.headers.Host=($params.host|urid) else . end
+							| if $params.path then
 								($params.path|urid) as $path
 								| if ($path | test("\\?ed=")) then
 									($path | split("?ed=")) as $data

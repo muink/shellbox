@@ -11,23 +11,23 @@ verifyProviders() {
 
 	if [ -n "$providers" ]; then
 		rcode="$(jsonSelect providers \
-			'if (type != "array") or (length == 0) then "No providers available." else
+			'if type != "array" or length == 0 then "No providers available." else
 				. as $providers |
 				last(
 					label $out | foreach range(length) as $i (null;
 						$providers[$i] |
-						if (type != "object") or (length == 0) then "Provider [\($i|tostring)] is invalid.", break $out else
+						if type != "object" or length == 0 then "Provider [\($i|tostring)] is invalid.", break $out else
 							. as $provider |
 							# Required
 							last(
 								label $required | ["url","tag"] | foreach .[] as $k (null;
 									$provider[$k] |
 									if $k == "url" then
-										if (type == "string") and (length > 0) then 0 else
+										if type == "string" and length > 0 then 0 else
 											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
 										end
 									elif $k == "tag" then
-										if (type == "string") and test("^[[:word:]]+$") then 0 else
+										if type == "string" and test("^[[:word:]]+$") then 0 else
 											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
 										end
 									else 0 end
@@ -46,13 +46,13 @@ verifyProviders() {
 											end
 										elif $k == "subgroup" then
 											$provider[$k] |
-											if (type == "string") and (length > 0) then 0
+											if type == "string" and length > 0 then 0
 											elif type == "array" then
 												. as $subgroups |
 												last(
 													label $optional_subgroup | foreach range(length) as $q (null;
 														$subgroups[$q] |
-														if (type == "string") and (length > 0) then 0
+														if type == "string" and length > 0 then 0
 														else "Invalid field [\($q|tostring)] of the key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $optional_subgroup end
 													)
 												) |
@@ -66,7 +66,7 @@ verifyProviders() {
 													last(
 														label $optional_filter | foreach range(length) as $q (null;
 															$filters[$q] |
-															if (type == "object") and (length > 0) then
+															if type == "object" and length > 0 then
 																# Field check
 																if (.action|type) != "string" or (.action | test("^(include|exclude)$") | not) then
 																	"Invalid field of the key [\"action\"] for filter [\($q|tostring)] for provider [\($i|tostring)].", break $optional_filter

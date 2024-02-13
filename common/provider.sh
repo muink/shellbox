@@ -484,7 +484,7 @@ parse_uri() {
 						"Skipping unsupported VMess node \\x27\($uri)\\x27."
 					elif .net == "quic" then
 						if $quic then
-							if ((.type|length > 0) and (.type != "none")) or (.path|length > 0) then
+							if ((.type|length > 0) and .type != "none") or (.path|length > 0) then
 								"Skipping unsupported VMess node \\x27\($uri)\\x27."
 							else 0 end
 						else "Skipping unsupported VMess node \\x27\($uri)\\x27.\\n\\tPlease rebuild sing-box with QUIC support!" end
@@ -512,11 +512,11 @@ parse_uri() {
 				| if $url.alpn then .tls.alpn=($url.alpn | split(",")) else . end
 				# transport
 				| $url.net as $type
-				| if $type and ($type != "tcp") then .transport.type=$type else . end
+				| if $type and $type != "tcp" then .transport.type=$type else . end
 				| if $type == "grpc" then
 					.transport.service_name=$url.path
 				elif ($type | test("^(tcp|h2)$")) then
-					if ($type == "h2") or ($url.type == "http") then
+					if $type == "h2" or $url.type == "http" then
 						.transport.type="http"
 						| if $url.host then .transport.host=($url.host | split(",")) else . end
 						| if $url.path then .transport.path=$url.path else . end

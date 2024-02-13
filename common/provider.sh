@@ -292,21 +292,19 @@ parse_uri() {
 				| .server=$url.host
 				| .server_port=$url.port
 				# method password
-				| if ($url.password|length) > 0 then
-					.password=($url.password|urid)
+				| if $url.password then
+					.password=$url.password
 					| .method=$url.username
 				else
-					($url.username | urid | @base64d | split(":")) as $data
-					| .method=$data[0]
-					| .password=$data[1]
+					($url.username | @base64d | split(":")) as $userinfo
+					| .method=$userinfo[0]
+					| .password=$userinfo[1]
 				end
-				| if ($params|length) > 0 then
-					# plugin plugin_opts
-					| if ($params.plugin|length) > 0 then
-						($params.plugin | urid | split(";")) as $data
-						| .plugin=($data[0] | if . == "simple-obfs" then "obfs-local" else . end)
-						| .plugin_opts=($data[1:] | join(";"))
-					else . end
+				# plugin plugin_opts
+				| if $params.plugin then
+					($params.plugin | urid | split(";")) as $pluginfo
+					| .plugin=($pluginfo[0] | if . == "simple-obfs" then "obfs-local" else . end)
+					| .plugin_opts=($pluginfo[1:] | join(";"))
 				else . end' \
 				"$url"
 		;;

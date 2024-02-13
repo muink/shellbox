@@ -179,10 +179,8 @@ parse_uri() {
 				| .server=$url.host
 				| .server_port=$url.port
 				# username password
-				| if ($url.username|length) > 0 then .username=($url.username|urid) else . end
-				| if ($url.password|length) > 0 then .password=($url.password|urid) else . end
-				# path
-				| if $url.fpath then .path="/"+$url.path else . end
+				| if $url.username then .username=$url.username else . end
+				| if $url.password then .password=$url.password else . end
 				# tls
 				| if $url.protocol == "https" then .tls.enabled=true else . end' \
 				"$url"
@@ -241,19 +239,14 @@ parse_uri() {
 				| .server_port=$url.port
 				| .tls.enabled=true
 				# password
-				| if ($url.username|length) > 0 then
-					if ($url.password|length) > 0 then
-						.password=($url.username + ":" + $url.password | urid)
-					else
-						.password=($url.username|urid)
-					end
-				else . end
+				| if $url.username then .password=$url.username else . end
+				| if $url.password then .password=.password + ":" + $url.password else . end
 				| if ($params|length) > 0 then
 					# obfs
-					| if ($params.obfs|length) > 0 then .obfs.type=$params.obfs else . end
-					| if ($params.["obfs-password"]|length) > 0 then .obfs.password=($params.["obfs-password"]|urid) else . end
+					| if $params.obfs then .obfs.type=$params.obfs else . end
+					| if $params["obfs-password"] then .obfs.password=($params["obfs-password"]|urid) else . end
 					# tls
-					| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
+					| if $params.sni then .tls.server_name=($params.sni|urid) else . end
 					| if $params.insecure == "1" then .tls.insecure=true else . end
 				else . end' \
 				"$url"

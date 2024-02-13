@@ -243,7 +243,7 @@ parse_uri() {
 				| if $url.password then .password=.password + ":" + $url.password else . end
 				| if ($params|length) > 0 then
 					# obfs
-					| if $params.obfs then .obfs.type=$params.obfs else . end
+					if $params.obfs then .obfs.type=$params.obfs else . end
 					| if $params["obfs-password"] then .obfs.password=($params["obfs-password"]|urid) else . end
 					# tls
 					| if $params.sni then .tls.server_name=($params.sni|urid) else . end
@@ -476,7 +476,7 @@ parse_uri() {
 				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			}
-			jsonSelect url \
+			rcode="$(jsonSelect url \
 				'$ARGS.positional[0] as $uri
 				| $ARGS.positional[1] as $quic
 				| if (.v|tostring) == "2" then
@@ -490,7 +490,8 @@ parse_uri() {
 						else "Skipping unsupported VMess node \\x27\($uri)\\x27.\\n\\tPlease rebuild sing-box with QUIC support!" end
 					else 0 end
 				else "Skipping unsupported VMess node \\x27\($uri)\\x27." end' \
-				"$uri" "$(validation features 'with_quic' && echo true || echo false)"
+				"$uri" "$(validation features 'with_quic' && echo true || echo false)" \
+			)"
 			[ "$rcode" = "0" ] || { logs warn "parse_uri: $rcode\n"; return 1; }
 
 			jsonSetjson config \
@@ -525,7 +526,7 @@ parse_uri() {
 					if $url.host then .transport.headers.Host=$url.host else . end
 					| $url.path as $path
 					| if $path then
-						| if ($path | test("\\?ed=")) then
+						if ($path | test("\\?ed=")) then
 							($path | split("?ed=")) as $data
 							| .transport.early_data_header_name="Sec-WebSocket-Protocol"
 							| .transport.max_early_data=($data[1]|tonumber)

@@ -20,7 +20,7 @@ urlencode() {
 # func <url>
 urldecode_params() {
 	[ -z "$1" ] && echo '{}' && return 0
-	echo "&$1" | $SED -E 's|&([^&=]+)(=([^&]*))?|,"\1":"\3"|g;s|^,|{|;s|$|}|' # DONOT decode params value, sed cannot handle array or object
+	echo "&$1" | $SED -E 's|=&|\&|g;s|&([^=&]+)=([^&]+)|"\1":"\2",|g;s|&[^"]+||g;s|,$||;s|^(.*)$|{\1}|' # DONOT decode params value, sed cannot handle array or object
 	#echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {($key): $val}' | jq -sc 'add // {}'
 }
 

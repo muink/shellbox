@@ -369,15 +369,15 @@ parse_uri() {
 				| .uuid=$url.username
 				| .tls.enabled=true
 				# password
-				| if ($url.password|length) > 0 then .password=($url.password|urid) else . end
+				| if $url.password then .password=$url.password else . end
 				| if ($params|length) > 0 then
 					# congestion_control
-					if ($params.congestion_control|length) > 0 then .congestion_control=$params.congestion_control else . end
+					if $params.congestion_control then .congestion_control=$params.congestion_control else . end
 					# udp_relay_mode
-					| if ($params.udp_relay_mode|length) > 0 then .udp_relay_mode=$params.udp_relay_mode else . end
+					| if $params.udp_relay_mode then .udp_relay_mode=$params.udp_relay_mode else . end
 					# tls
-					| if ($params.sni|length) > 0 then .tls.server_name=($params.sni|urid) else . end
-					| if ($params.alpn|length) > 0 then .tls.alpn=($params.alpn | urid | split(",")) else . end
+					| if $params.sni then .tls.server_name=($params.sni|urid) else . end
+					| if $params.alpn then .tls.alpn=($params.alpn | urid | split(",")) else . end
 				else . end' \
 				"$url"
 		;;

@@ -9,91 +9,71 @@
 verifyProviders() {
 	local providers="$1" rcode
 
+	JQFUNC_subgroup='def subgroup:
+		def loop($q):
+			if $q >= length then empty else
+				if (.[$q] | type == "string" and length > 0) then empty, loop($q+1)
+				else "Subgroup [\($q)] of the provider [$i] is invalid." end
+			end;
+		if type == "string" then empty
+		elif type == "array" then loop(0)
+		else 1 end;'
+
+	JQFUNC_filter='def filter:
+		def loop($q):
+			if $q >= length then empty else
+				if (.[$q] | type == "object" and length > 0) then
+					# Field check
+					if (.[$q].action | type != "string" or (test("^(include|exclude)$") | not)) then
+						"Invalid field of the key [\"action\"] for filter [\($q)] for provider [$i]."
+					elif (.[$q].regex | type != "string") then
+						"Invalid field of the key [\"regex\"] for filter [\($q)] for provider [$i]."
+					else empty, loop($q+1) end
+				else "Filter [\($q)] of the provider [$i] is invalid." end
+			end;
+		if type == "array" then loop(0)
+		else 1 end;'
+
+	JQFUNC_provider='def provider:
+		def verify($k):
+			# Required
+			if $k == "url" then
+				if type == "string" and length > 0 then empty else 1 end
+			elif $k == "tag" then
+				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
+			# Optional
+			elif $k == "prefix" then
+				if . == null or type == "string" then empty else 1 end
+			elif $k == "ua" then
+				if . == null or type == "string" then empty else 1 end
+			elif $k == "subgroup" then
+				if . == null then empty else subgroup end
+			elif $k == "filter" then
+				if . == null then empty else filter end
+			else empty end
+			| if . == 1 then "Key [\"\($k)\"] of the provider [$i] is invalid." else gsub("\\$k"; "\($k)") end;
+		if type == "object" and length > 0 then
+			(.url | verify("url"))
+			// (.tag | verify("tag"))
+			// (.subgroup | verify("subgroup"))
+			// (.prefix | verify("prefix"))
+			// (.ua | verify("ua"))
+			// (.filter | verify("filter"))
+		else "Provider [$i] is invalid." end;'
+
+	JQFUNC_providers='def providers:
+		def loop($i):
+			if $i >= length then empty else (.[$i] | provider | gsub("\\$i"; "\($i)")) // loop($i+1) end;
+		if type == "array" and length > 0 then loop(0)
+		else "No providers available." end;'
+
 	if [ -n "$providers" ]; then
-		rcode="$(jsonSelect providers \
-			'if type != "array" or length == 0 then "No providers available." else
-				. as $providers |
-				last(
-					label $out | foreach range(length) as $i (null;
-						$providers[$i] |
-						if type != "object" or length == 0 then "Provider [\($i|tostring)] is invalid.", break $out else
-							. as $provider |
-							# Required
-							last(
-								label $required | ["url","tag"] | foreach .[] as $k (null;
-									$provider[$k] |
-									if $k == "url" then
-										if type == "string" and length > 0 then 0 else
-											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
-										end
-									elif $k == "tag" then
-										if type == "string" and test("^[[:word:]]+$") then 0 else
-											"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $required
-										end
-									else 0 end
-								)
-							) |
-							if . != 0 then ., break $out else
-								# Optional
-								$provider | keys_unsorted |
-								last(
-									label $optional | foreach .[] as $k (null;
-										if ($k | test("^(prefix|ua)$")) then
-											$provider[$k] |
-											if type == "null" then 0
-											elif type == "string" then 0 else
-												"Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $optional
-											end
-										elif $k == "subgroup" then
-											$provider[$k] |
-											if type == "string" and length > 0 then 0
-											elif type == "array" then
-												. as $subgroups |
-												last(
-													label $optional_subgroup | foreach range(length) as $q (null;
-														$subgroups[$q] |
-														if type == "string" and length > 0 then 0
-														else "Invalid field [\($q|tostring)] of the key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $optional_subgroup end
-													)
-												) |
-												if . == 0 then 0 else ., break $optional end
-											else "Key [\"\($k)\"] of the provider [\($i|tostring)] is invalid.", break $optional end
-										elif $k == "filter" then
-											$provider[$k] |
-											if type != "array" then "Filters of the provider [\($i|tostring)] is invalid.", break $optional else
-												if length == 0 then 0 else
-													. as $filters |
-													last(
-														label $optional_filter | foreach range(length) as $q (null;
-															$filters[$q] |
-															if type == "object" and length > 0 then
-																# Field check
-																if (.action|type) != "string" or (.action | test("^(include|exclude)$") | not) then
-																	"Invalid field of the key [\"action\"] for filter [\($q|tostring)] for provider [\($i|tostring)].", break $optional_filter
-																elif (.regex|type) != "string" then
-																	"Invalid field of the key [\"regex\"] for filter [\($q|tostring)] for provider [\($i|tostring)].", break $optional_filter
-																else 0 end
-															else "Filter [\($q|tostring)] of the provider [\($i|tostring)] is invalid.", break $optional_filter end
-														)
-													) |
-													if . == 0 then 0 else ., break $optional end
-												end
-											end
-										else 0 end
-									)
-								) |
-								if . == 0 then 0 else ., break $out end
-							end
-						end
-					)
-				)
-			end' \
-		)"
+		rcode="$(jsonSelect providers "$JQFUNC_subgroup $JQFUNC_filter $JQFUNC_provider $JQFUNC_providers providers" )"
 	else
 		rcode="No providers available."
 	fi
 
-	[ "$rcode" = "0" ] || { logs err "verifyProviders: $rcode\n"; return 1; }
+	[ -z "$rcode" ] || { logs err "verifyProviders: $rcode\n"; return 1; }
 	return 0
 }
 

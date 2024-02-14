@@ -24,6 +24,9 @@ JQFUNC_urid='def urid:
 		[loop(0)];
 	gsub("(?<m>(?:%[[:xdigit:]]{2})+)"; .m | decode | utf82uni | implode);'
 
+JQFUNC_push='def push($e):
+	.[length]=$e;'
+
 strToString() {
 	local str
 	if [ -z "$1" ]; then

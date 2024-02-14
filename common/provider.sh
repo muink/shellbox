@@ -27,7 +27,7 @@ urldecode_params() {
 # func <obj>
 urlencode_params() {
 	isEmpty "$1" && return 0
-	echo "$1" | jq '. | length as $count | keys_unsorted as $keys | map(.) as $vals | 0 | while(. < $count; .+1) | $keys[.] + "=" + ($vals[.]|tostring)' | jq -src 'join("&")'
+	echo "$1" | jq '. | length as $count | keys_unsorted as $keys | map(.) as $vals | 0 | while(. < $count; .+1) | "\($keys[.])=\($vals[.])"' | jq -src 'join("&")'
 }
 
 # func <type> <str>
@@ -147,7 +147,7 @@ buildURL() {
 
 	scheme="$(jsonSelect obj '.protocol')"
 	userinfo="$(jsonSelect obj 'if .username then (.username|@uri) else "" end + if .password then ":" + (.password|@uri) else "" end')"
-	hostport="$(jsonSelect obj 'if (.host | test(":")) then "[\(.host)]" else .host end + ":" + (.port|tostring)')"
+	hostport="$(jsonSelect obj 'if (.host | test(":")) then "[\(.host)]" else .host end + ":\(.port)"')"
 	path="$(jsonSelect obj '.path')"
 	query="$(urlencode_params "$(jsonSelect obj '.searchParams')" )"
 	fragment="$(jsonSelect obj '.hash')"
@@ -480,7 +480,7 @@ parse_uri() {
 			rcode="$(jsonSelect url \
 				'$ARGS.positional[0] as $uri
 				| $ARGS.positional[1] as $quic
-				| if (.v|tostring) == "2" then
+				| if "\(.v)" == "2" then
 					if .net == "kcp" then
 						"Skipping unsupported VMess node \\x27\($uri)\\x27."
 					elif .net == "quic" then

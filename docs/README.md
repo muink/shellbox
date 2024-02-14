@@ -16,6 +16,7 @@
       "ua": "v2rayng", // Optional. Sent User-Agent.
       "filter": [ // Optional. Pre-filter nodes.
         { "action": "exclude", "regex": "海外用户|回国" }
+        // Filters are matched from front to back. Once the expression is matched successfully, subsequent filters will be ignored.
       ]
     },
     {

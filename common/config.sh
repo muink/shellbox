@@ -102,5 +102,5 @@ updateProvider() {
 	done
 	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully updated $count providers of total $total.\n"
-	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
+	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"
 }

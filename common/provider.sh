@@ -578,7 +578,7 @@ parse_provider() {
 	done
 	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
-	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ]s$[ $time % 1000 ]ms.\n"
+	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"
 
 	eval "$1=\"\$results\""
 }

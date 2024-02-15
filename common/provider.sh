@@ -565,17 +565,30 @@ parse_provider() {
 		return 1
 	}
 
-	local time=$($DATE -u +%s%3N) count=0 name
-	for node in $nodes; do
-		[ -n "$node" ] && parse_uri result "$node"
-		isEmpty "$result" && continue
-		# filter
-		name="$(jsonSelect result '.tag')"
-		filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; continue; }
+	local time=$($DATE -u +%s%3N)
+	tmpfd 8 # Results
+	tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done; local count=0 # Generate $NPROC tokens
+	for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
+		read -u6 count # Take token
+		{
+			parse_uri result "${node#*>}"
+			isEmpty "$result" && { echo $count >&6; exit 0; }
+			# filter
+			name="$(jsonSelect result '.tag')"
+			filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
 
-		jsonSetjson results ".[$count]=\$ARGS.positional[0]" "$result"
-		let count++
+			echo "${node%%>*} $result" >&8
+			let count++
+			echo $count >&6 # Release token
+		} &
 	done
+	wait
+	count=$[ $( $HEAD -n$NPROC /proc/$$/fd/6 | tr '\n' '+') 0 ]
+	if [ $count -ne 0 ]; then
+		results="$( $HEAD -n$count /proc/$$/fd/8 | $SORT -n | $SED -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
+		results="[${results:0:-1}]"
+	fi
+	unfd 8; unfd 6
 	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"

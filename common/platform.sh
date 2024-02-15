@@ -41,7 +41,6 @@ getSysinfo() {
 			unset ARCH
 		;;
 	esac
-	export NPROC=$(cat /proc/cpuinfo | grep "processor" | wc -l)
 	[ -n "$OS" -a -n "$ARCH" ] || err "Unsupported system or architecture.\n"
 	[ "$OS" = "windows" -a "$ARCH" = "arm64" ] && err "Unsupported system or architecture.\n"
 	return 0

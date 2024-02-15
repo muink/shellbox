@@ -43,6 +43,20 @@ pause() {
 	read -p "Press any key to continue..." -n1 -r
 }
 
+# func <fdnum>
+tmpfd() {
+	local tmpfifo=/tmp/pid$$fd$1.fifo
+	trap "exec $1>&-;exec $1<&-;exit 0" 2
+	mkfifo $tmpfifo
+	eval "exec $1<>$tmpfifo"
+	rm -rf $tmpfifo
+}
+
+# func <fdnum>
+unfd() {
+	eval "exec $1>&-;exec $1<&-"
+}
+
 # func <url> [ua]
 wfetch() {
 	curl --user-agent "${2:-shellbox}" --connect-timeout 10 --retry 3 -sL --url "$1"

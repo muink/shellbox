@@ -58,21 +58,24 @@ if [ "$OS" = "darwin" ]; then
 	export SED=gsed
 	export MD5=gmd5sum
 	export DATE=gdate
+	export HEAD=ghead
 	export GETOPT=ggetopt
 elif [ "$OS" = "windows" ]; then
 	export SINGBOX=sing-box.exe
 	export SED=sed.exe
 	export MD5=md5sum.exe
 	export DATE=date.exe
+	export HEAD=head.exe
 	export GETOPT=getopt.exe
 else
 	export SINGBOX=sing-box
 	export SED=sed
 	export MD5=md5sum
 	export DATE=date
+	export HEAD=head
 	export GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar awk tr jq $SED $MD5 $DATE $GETOPT"
+DEPENDENCIES="curl unzip tar awk tr jq $SED $MD5 $DATE $HEAD $GETOPT"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 

@@ -59,6 +59,7 @@ if [ "$OS" = "darwin" ]; then
 	export MD5=gmd5sum
 	export DATE=gdate
 	export HEAD=ghead
+	export SORT=gsort
 	export GETOPT=ggetopt
 elif [ "$OS" = "windows" ]; then
 	export SINGBOX=sing-box.exe
@@ -66,6 +67,7 @@ elif [ "$OS" = "windows" ]; then
 	export MD5=md5sum.exe
 	export DATE=date.exe
 	export HEAD=head.exe
+	export SORT=sort.exe
 	export GETOPT=getopt.exe
 else
 	export SINGBOX=sing-box
@@ -73,9 +75,10 @@ else
 	export MD5=md5sum
 	export DATE=date
 	export HEAD=head
+	export SORT=sort
 	export GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar awk tr jq $SED $MD5 $DATE $HEAD $GETOPT"
+DEPENDENCIES="curl unzip tar awk tr jq $SED $MD5 $DATE $HEAD $SORT $GETOPT"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 

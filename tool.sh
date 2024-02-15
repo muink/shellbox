@@ -35,8 +35,9 @@ export DASHDIR="$WORKDIR/ui"
 export PATH="$BINADIR:$PATH"
 . "$COMMDIR/common.sh"
 . "$COMMDIR/config.sh"
-. "$COMMDIR/json.sh"
 . "$COMMDIR/github.sh"
+. "$COMMDIR/json.sh"
+. "$COMMDIR/platform.sh"
 . "$COMMDIR/provider.sh"
 
 

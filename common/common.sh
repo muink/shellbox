@@ -55,7 +55,7 @@ downloadTo() {
 
 # func <str>
 calcStringMD5() {
-	echo -n "$1" | $MD5 | cut -f1 -d' '
+	echo -n "$1" | $MD5 | awk '{print $1}'
 }
 
 # func <str>

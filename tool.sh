@@ -81,10 +81,11 @@ else
 	export SORT=sort
 	export GETOPT=getopt
 fi
-export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -d '[[:alpha:][:blank:][:punct:]]' | $SORT -nu | $TAIL -n1) +1]
-DEPENDENCIES="curl unzip tar seq wc awk mkfifo tr jq $SED $MD5 $DATE $HEAD $TAIL $SORT $GETOPT"
+DEPENDENCIES="curl unzip tar seq wc cut mkfifo tr jq $SED $MD5 $DATE $HEAD $TAIL $SORT $GETOPT"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
+[ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
+	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | $SORT -nu | $TAIL -n1) +1]
 
 
 # Getargs

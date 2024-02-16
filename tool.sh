@@ -81,7 +81,7 @@ else
 	export SORT=sort
 	export GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar seq awk mkfifo tr jq $SED $MD5 $DATE $HEAD $TAIL $SORT $GETOPT"
+DEPENDENCIES="curl unzip tar seq wc awk mkfifo tr jq $SED $MD5 $DATE $HEAD $TAIL $SORT $GETOPT"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 

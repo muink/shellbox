@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-VERSION=0.1
+VERSION=0.3
 LOGO="\
 =================================================
           ___ _        _ _ ___              　
@@ -141,7 +141,7 @@ if [ "$#" -gt 1 ]; then
 				exit
 			;;
 			-e)
-				ENLOGFILE=true
+				export ENLOGFILE=true
 			;;
 			-g|--generate)
 				GENERATOR=true

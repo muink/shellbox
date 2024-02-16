@@ -554,9 +554,9 @@ parse_uri() {
 
 # func <var> <subscription_url>
 parse_provider() {
-	echo "$1" | grep -qE "^(node|nodes|result|results|url|time|count|name)$" &&
+	echo "$1" | grep -qE "^(node|nodes|result|results|count|url|time)$" &&
 		{ logs err "parse_provider: Variable name '$1' is conflict.\n"; return 1; }
-	local node nodes result results='[]' url="$2"
+	local node nodes count result results='[]' url="$2"
 	[ -n "$1" ] && eval "$1=''" || return 1
 
 	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" | tr -d '\r' | $SED 's|\s|%20|g')"
@@ -567,7 +567,7 @@ parse_provider() {
 
 	local time=$($DATE -u +%s%3N)
 	tmpfd 8 # Results
-	tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done; local count=0 # Generate $NPROC tokens
+	tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done # Generate $NPROC tokens
 	for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
 		read -u6 count # Take token
 		{
@@ -583,11 +583,29 @@ parse_provider() {
 		} &
 	done
 	wait
-	count=$[ $( $HEAD -n$NPROC /proc/$$/fd/6 | tr '\n' '+') 0 ]
-	if [ $count -ne 0 ]; then
-		results="$( $HEAD -n$count /proc/$$/fd/8 | $SORT -n | $SED -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
-		results="[${results:0:-1}]"
-	fi
+	count=0
+	case "$OS" in
+		windows)
+			for i in $(seq 1 $NPROC); do
+				read -u6
+				count=$[ $count + $REPLY ]
+			done
+			if [ $count -ne 0 ]; then
+				for i in $(seq 1 $count); do
+					read -u8 result
+					jsonSetjson results '.[($ARGS.positional[0] -1)]=$ARGS.positional[1]' "${result%% *}" "${result#* }"
+				done
+				jsonSet results '.-[null]'
+			fi
+		;;
+		*)
+			count=$[ $( $HEAD -n$NPROC /proc/$$/fd/6 | tr '\n' '+') 0 ]
+			if [ $count -ne 0 ]; then
+				results="$( $HEAD -n$count /proc/$$/fd/8 | $SORT -n | $SED -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
+				results="[${results:0:-1}]"
+			fi
+		;;
+	esac
 	unfd 8; unfd 6
 	time=$[ $($DATE -u +%s%3N) - $time ]
 	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"

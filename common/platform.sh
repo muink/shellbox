@@ -65,8 +65,11 @@ depCheck() {
 			if [ "$errcount" -gt 0 ]; then
 				for dep in $misss; do
 					case "$dep" in
-						gsed|gmd5sum|gdate|ghead|gtail|gsort)
+						gmd5sum|gdate|ghead|gtail|gsort)
 							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n"
+						;;
+						gsed)
+							err "Missing dependencies: gnu-sed, Please install manually using the homebrew.\n"
 						;;
 						ggetopt)
 							if [ -x "$(brew --prefix)/opt/gnu-getopt/bin/getopt" ]; then

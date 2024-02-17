@@ -6,7 +6,7 @@
 #
 
 # Ref: https://gist.github.com/muink/b7f506e4f210633d466c5c8e48440384
-JQFUNC_urid='def urid:
+export JQFUNC_urid='def urid:
 	def uni2num:
 		if 48 <= . and . <= 57 then . - 48 elif 65 <= . and . <= 70 then . - 55 else . - 87 end;
 	def decode:
@@ -24,7 +24,7 @@ JQFUNC_urid='def urid:
 		[loop(0)];
 	gsub("(?<m>(?:%[[:xdigit:]]{2})+)"; .m | decode | utf82uni | implode);'
 
-JQFUNC_push='def push($e):
+export JQFUNC_push='def push($e):
 	.[length]=$e;'
 
 strToString() {

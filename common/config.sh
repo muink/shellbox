@@ -5,11 +5,26 @@
 # See /LICENSE for more information.
 #
 
+export JQFUNC_filter='def filter:
+	def loop($q):
+		if $q >= length then empty else
+			if (.[$q] | type == "object" and length > 0) then
+				# Field check
+				if (.[$q].action | type != "string" or (test("^(include|exclude)$") | not)) then
+					"Invalid field of the key [\"action\"] for filter [\($q)] for provider [$i]."
+				elif (.[$q].regex | type != "string") then
+					"Invalid field of the key [\"regex\"] for filter [\($q)] for provider [$i]."
+				else empty, loop($q+1) end
+			else "Filter [\($q)] of the provider [$i] is invalid." end
+		end;
+	if type == "array" then loop(0)
+	else 1 end;'
+
 # func <providers>
 verifyProviders() {
 	local providers="$1" rcode
 
-	JQFUNC_subgroup='def subgroup:
+	local JQFUNC_subgroup='def subgroup:
 		def loop($q):
 			if $q >= length then empty else
 				if (.[$q] | type == "string" and length > 0) then empty, loop($q+1)
@@ -19,22 +34,7 @@ verifyProviders() {
 		elif type == "array" then loop(0)
 		else 1 end;'
 
-	JQFUNC_filter='def filter:
-		def loop($q):
-			if $q >= length then empty else
-				if (.[$q] | type == "object" and length > 0) then
-					# Field check
-					if (.[$q].action | type != "string" or (test("^(include|exclude)$") | not)) then
-						"Invalid field of the key [\"action\"] for filter [\($q)] for provider [$i]."
-					elif (.[$q].regex | type != "string") then
-						"Invalid field of the key [\"regex\"] for filter [\($q)] for provider [$i]."
-					else empty, loop($q+1) end
-				else "Filter [\($q)] of the provider [$i] is invalid." end
-			end;
-		if type == "array" then loop(0)
-		else 1 end;'
-
-	JQFUNC_provider='def provider:
+	local JQFUNC_provider='def provider:
 		def verify($k):
 			# Required
 			if $k == "url" then
@@ -61,7 +61,7 @@ verifyProviders() {
 			// (.filter | verify("filter"))
 		else "Provider [$i] is invalid." end;'
 
-	JQFUNC_providers='def providers:
+	local JQFUNC_providers='def providers:
 		def loop($i):
 			if $i >= length then empty else (.[$i] | provider | gsub("\\$i"; "\($i)")) // loop($i+1) end;
 		if type == "array" and length > 0 then loop(0)
@@ -103,4 +103,35 @@ updateProvider() {
 	time=$[ $(date -u +%s%3N) - $time ]
 	logs yeah "Successfully updated $count providers of total $total.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"
+}
+
+# func <configs>
+verifyConfigs() {
+	local configs="$1" rcode
+
+	JQFUNC_config='def config:
+		;'
+
+	JQFUNC_configs='def configs:
+		;'
+
+	if [ -n "$configs" ]; then
+		rcode="$(jsonSelect configs "$JQFUNC_config $JQFUNC_configs configs" )"
+	else
+		rcode="No configs available."
+	fi
+
+	[ -z "$rcode" ] || { logs err "verifyConfigs: $rcode\n"; return 1; }
+	return 0
+}
+
+buildConfig() {
+	[ -x "$(command -v "$SINGBOX")" ] || { logs err "sing-box is not installed.\n"; return 1; }
+	local setting="$(cat "$MAINSET")"
+	local providers="$(jsonSelect setting '.providers')"
+	local configs="$(jsonSelect setting '.configs')"
+	verifyProviders "$providers" || return 1
+	verifyConfigs "$configs" || return 1
+
+	echo tag subgroup prefix
 }

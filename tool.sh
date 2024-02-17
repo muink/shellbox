@@ -135,7 +135,7 @@ if [ "$#" -gt 1 ]; then
 		updateProvider || exit 1
 	fi
 	if [ -n "$GENERATOR" ]; then
-		pause
+		buildConfig || exit 1
 	fi
 	exit
 fi
@@ -167,6 +167,7 @@ case "$MENUID" in
 		$LOGO
 
 		EOF
+		buildConfig || { pause; exit; }
 		pause
 	;;
 	2)

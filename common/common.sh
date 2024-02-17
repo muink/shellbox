@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2024 Anya Lin
 #
 # This is free software, licensed under the GNU General Public License v3.
@@ -38,6 +38,12 @@ yeah() {
 logs() {
 	[ -n "$ENLOGFILE" ] && { echo -ne "[$(date --iso-8601="seconds")]: $(${1:-note} 2>&1) $2" >> "$MAINLOG"; return 0; }
 	${1:-note} "$2"
+}
+
+# func <total> <count>
+progress() {
+	local total=$1 count=$2 block=34 arr=("/" "-" "\\" "|" "/")
+	printf "progress:[%-${block}s] %d%% %s\r" "$(head -c$[ $count *$block /$total ] < /dev/zero | tr '\0' '#')" "$[ $count *100 /$total ]" "${arr[$[ $count %4 +1 ]]}"
 }
 
 pause() {

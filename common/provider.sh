@@ -568,7 +568,7 @@ parse_provider() {
 
 	local time=$(date -u +%s%3N)
 	case "$OS" in
-		darwin)
+		windows|darwin)
 			for node in $nodes; do
 				[ -n "$node" ] && parse_uri result "$node"
 				isEmpty "$result" && continue
@@ -580,37 +580,6 @@ parse_provider() {
 				progress "$total" "$count"
 				let count++
 			done
-		;;
-		windows)
-			tmpfd 8 # Results
-			tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done # Generate $NPROC tokens
-			for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
-				read -u6 count # Take token
-				{
-					parse_uri result "${node#*>}"
-					isEmpty "$result" && { echo $count >&6; exit 0; }
-					# filter
-					name="$(jsonSelect result '.tag')"
-					filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
-
-					echo "${node%%>*} $result" >&8
-					progress "$[ $total /$NPROC ]" "$count"
-					let count++
-					echo $count >&6 # Release token
-				} &
-			done; wait; count=0
-			for i in $(seq 1 $NPROC); do
-				read -u6
-				count=$[ $count + $REPLY ]
-			done
-			if [ $count -ne 0 ]; then
-				for i in $(seq 1 $count); do
-					read -u8 result
-					jsonSetjson results '.[($ARGS.positional[0] -1)]=$ARGS.positional[1]' "${result%% *}" "${result#* }"
-				done
-				jsonSet results '.-[null]'
-			fi
-			unfd 8; unfd 6
 		;;
 		*)
 			tmpfd 8 # Results

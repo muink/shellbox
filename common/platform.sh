@@ -68,7 +68,7 @@ depCheck() {
 						cut|date|head|md5sum|mkfifo|seq|sort|tail|tr|wc)
 							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n"
 						;;
-						gsed)
+						sed)
 							err "Missing dependencies: gnu-sed, Please install manually using the homebrew.\n"
 						;;
 						ggetopt)
@@ -92,14 +92,14 @@ depCheck() {
 			fi
 		;;
 		msys)
-			#VER=$(wmic os get version | $SED -En "/^[0-9\.]+/{s|^([0-9]+\.[0-9]+)\..*|\1|p}")
+			#VER=$(wmic os get version | sed -En "/^[0-9\.]+/{s|^([0-9]+\.[0-9]+)\..*|\1|p}")
 			if [ "$errcount" -gt 0 ]; then
 				for dep in $misss; do
 					case "$dep" in
 						curl)
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n"
 						;;
-						cut|date|head|md5sum|mkfifo|seq|sort|tail|tr|wc|awk|getopt.exe|sed.exe|tar|unzip)
+						cut|date|head|md5sum|mkfifo|sed|seq|sort|tail|tr|wc|awk|getopt.exe|tar|unzip)
 							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n"
 						;;
 						jq)

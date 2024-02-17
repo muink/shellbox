@@ -20,7 +20,7 @@ urlencode() {
 # func <url>
 urldecode_params() {
 	[ -z "$1" ] && echo '{}' && return 0
-	echo "&$1" | $SED -E 's|=&|\&|g;s|&([^=&]+)=([^&]+)|"\1":"\2",|g;s|&[^"]+||g;s|,$||;s|^(.*)$|{\1}|' # DONOT decode params value, sed cannot handle array or object
+	echo "&$1" | sed -E 's|=&|\&|g;s|&([^=&]+)=([^&]+)|"\1":"\2",|g;s|&[^"]+||g;s|,$||;s|^(.*)$|{\1}|' # DONOT decode params value, sed cannot handle array or object
 	#echo "$1" | jq -Rc 'splits("&|;") | split("=") as [$key, $val] | {($key): $val}' | jq -sc 'add // {}'
 }
 
@@ -55,7 +55,7 @@ validation() {
 			echo "$str" | grep -qE "^((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})$" || return 1
 		;;
 		ipaddr6)
-			echo "$str" | $SED 's|^\[\(.*\)\]$|\1|' | grep -qE "^(\
+			echo "$str" | sed 's|^\[\(.*\)\]$|\1|' | grep -qE "^(\
 ([[:xdigit:]]{1,4}:){7}[[:xdigit:]]{1,4}|\
 ([[:xdigit:]]{1,4}:){1,7}:|\
 ([[:xdigit:]]{1,4}:){1,6}:[[:xdigit:]]{1,4}|\
@@ -86,15 +86,15 @@ parseURL() {
 	local protocol userinfo username password host port path search hash
 
 	# hash / URI fragment    /#(.+)$/
-	hash="$(echo "$url" | $SED -En 's|.*#(.+)$|\1|p')"
+	hash="$(echo "$url" | sed -En 's|.*#(.+)$|\1|p')"
 	url="${url%#*}"
 	# protocol / URI scheme    /^([[:alpha:]][[:alpha:]\d\+\-\.]*):\/\//
-	eval "$(echo "$url" | $SED -En "s|^([[:alpha:]][[:alnum:]\.+-]*)://(.+)|protocol='\1';url='\2'|p")"
+	eval "$(echo "$url" | sed -En "s|^([[:alpha:]][[:alnum:]\.+-]*)://(.+)|protocol='\1';url='\2'|p")"
 	[ -n "$protocol" ] || return 1
 	# userinfo    /^([^@]+)@/
 	# host    /^[\w\-\.]+/
 	# port    /^:(\d+)/
-	eval "$(echo "$url" | $SED -En "s,^(([^@]+)@)?([[:alnum:]_\.-]+|\[[[:xdigit:]:\.]+\])(:([0-9]+))?(.*),userinfo='\2';host='\3';port='\5';url='\6',p")"
+	eval "$(echo "$url" | sed -En "s,^(([^@]+)@)?([[:alnum:]_\.-]+|\[[[:xdigit:]:\.]+\])(:([0-9]+))?(.*),userinfo='\2';host='\3';port='\5';url='\6',p")"
 	host="$(echo "$host" | tr -d '[]')"
 	if [ -z "$port" ]; then
 		case "$protocol" in
@@ -110,12 +110,12 @@ parseURL() {
 		# https://www.rfc-editor.org/rfc/rfc3986.html#section-3.2.1
 		# username    /^[^:]+/
 		# password    /^:([^:]+)/
-		eval "$(echo "$userinfo" | $SED -En "s|^([^:]+)(:([^:]+))?.*|username='\1';password='\3'|p")"
+		eval "$(echo "$userinfo" | sed -En "s|^([^:]+)(:([^:]+))?.*|username='\1';password='\3'|p")"
 	fi
 
 	# path    /^(\/[^\?\#]*)/
 	# search / URI query    /^\?([^#]+)/
-	eval "$(echo "$url" | $SED -En "s|^(/[^\?#]*)?(\?([^#]+))?.*|path='\1';search='\3'|p")"
+	eval "$(echo "$url" | sed -En "s|^(/[^\?#]*)?(\?([^#]+))?.*|path='\1';search='\3'|p")"
 
 	# pre-decode
 	[ -n "$hash" ] && hash="$(urldecode "$hash")" || hash="$(calcStringMD5 "$url")"
@@ -166,7 +166,7 @@ parse_uri() {
 		{ logs err "parse_uri: Variable name '$1' is conflict.\n"; return 1; }
 	local config='{}' url rcode
 	[ -n "$1" ] && eval "$1=''" || return 1
-	local uri="$2" type="${2%%:*}" body="$(echo "$2" | $SED -E 's|^([[:alpha:]][[:alnum:]\.+-]*)://||')"
+	local uri="$2" type="${2%%:*}" body="$(echo "$2" | sed -E 's|^([[:alpha:]][[:alnum:]\.+-]*)://||')"
 
 	case "$type" in
 		http|https)
@@ -277,7 +277,7 @@ parse_uri() {
 		ss)
 			# Shadowrocket format
 			local ss_body ss_lable
-			eval "$(echo "$body" | $SED -En "s|^([^#]+)(#.*)?|ss_body='\1';ss_lable='\2'|p")"
+			eval "$(echo "$body" | sed -En "s|^([^#]+)(#.*)?|ss_body='\1';ss_lable='\2'|p")"
 			ss_body="$(decodeBase64Str "$ss_body")"
 			[ -n "$ss_body" ] && uri="$type://$ss_body$ss_lable"
 
@@ -559,7 +559,7 @@ parse_provider() {
 	local node nodes count result results='[]' url="$2"
 	[ -n "$1" ] && eval "$1=''" || return 1
 
-	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" | tr -d '\r' | $SED 's|\s|%20|g')"
+	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" | tr -d '\r' | sed 's|\s|%20|g')"
 	[ -n "$nodes" ] || {
 		logs warn "parse_provider: Unable to resolve resource from provider '$url'.\n"
 		return 1
@@ -601,7 +601,7 @@ parse_provider() {
 		*)
 			count=$[ $( head -n$NPROC /proc/$$/fd/6 | tr '\n' '+') 0 ]
 			if [ $count -ne 0 ]; then
-				results="$( head -n$count /proc/$$/fd/8 | sort -n | $SED -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
+				results="$( head -n$count /proc/$$/fd/8 | sort -n | sed -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
 				results="[${results:0:-1}]"
 			fi
 		;;

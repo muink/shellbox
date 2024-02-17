@@ -44,7 +44,7 @@ export PATH="$BINADIR:$PATH"
 # Init
 [ -d "$BINADIR" ] || mkdir -p "$BINADIR"
 [ -f "$MAINSET" ] || echo '{}' > "$MAINSET"
-[ -f "$MAINLOG" ] && { [ $(wc -l "$MAINLOG" | awk '{print $1}') -gt 1000 ] && $SED -i "1,300d"; }
+[ -f "$MAINLOG" ] && { [ $(wc -l "$MAINLOG" | awk '{print $1}') -gt 1000 ] && sed -i "1,300d"; }
 #
 [ -d "$CONFDIR" ] || mkdir -p "$CONFDIR"
 [ -d "$LOGSDIR" ] || mkdir -p "$LOGSDIR"
@@ -54,20 +54,17 @@ export PATH="$BINADIR:$PATH"
 # ENV
 getSysinfo || { pause; exit; }
 if [ "$OS" = "darwin" ]; then
-	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
+	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$PATH"
 	export SINGBOX=sing-box
-	export SED=gsed
 	export GETOPT=ggetopt
 elif [ "$OS" = "windows" ]; then
 	export SINGBOX=sing-box.exe
-	export SED=sed.exe
 	export GETOPT=getopt.exe
 else
 	export SINGBOX=sing-box
-	export SED=sed
 	export GETOPT=getopt
 fi
-DEPENDENCIES="cut date head md5sum mkfifo seq sort tail tr wc $AWK curl $GETOPT jq $SED tar unzip"
+DEPENDENCIES="cut date head md5sum mkfifo sed seq sort tail tr wc $AWK curl $GETOPT jq tar unzip"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
@@ -78,14 +75,14 @@ depCheck || { pause; exit; }
 GETARGS=$($GETOPT -n $(basename $0) -o gVhue -l update,generate,version,help -- "$@")
 [ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
 eval set -- "$GETARGS"
-ERROR=$(echo "$GETARGS" | $SED "s|'[^']*'||g;s| -- .*$||;s| --$||")
+ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")
 # Duplicate options
 for ru in -h\|--help -V\|--version -g\|--generate -u\|--update; do
 	eval "echo \"\$ERROR\" | grep -qE \" ${ru%|*}[ .+]* ($ru)| ${ru#*|}[ .+]* ($ru)\"" && { err "Option '$ru' option is repeated\n"; exit; }
 done
 # Independent options
 for ru in -h\|--help -V\|--version; do
-	eval "echo \"\$ERROR\" | grep -qE \"^ ($ru) .+|.+ ($ru) .+|.+ ($ru) *\$\"" && { err "Option '$(echo "$ERROR" | $SED -E "s,^.*($ru).*$,\1,")' cannot be used with other options\n"; exit; }
+	eval "echo \"\$ERROR\" | grep -qE \"^ ($ru) .+|.+ ($ru) .+|.+ ($ru) *\$\"" && { err "Option '$(echo "$ERROR" | sed -E "s,^.*($ru).*$,\1,")' cannot be used with other options\n"; exit; }
 done
 # Conflicting options
 

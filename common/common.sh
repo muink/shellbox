@@ -79,13 +79,13 @@ decodeBase64Str() {
 }
 
 checkVersion() {
-	local new="$(github_getLatest muink shellbox | $SED 's|^v||')"
+	local new="$(github_getLatest muink shellbox | sed 's|^v||')"
 	NEWWVER="${new:-null}"
 }
 
 checkCoreVersion() {
 	local cur="$($SINGBOX version 2>/dev/null | head -1 | awk '{print $3}')"
-	local new="$(github_getLatest sagernet sing-box | $SED 's|^v||')"
+	local new="$(github_getLatest sagernet sing-box | sed 's|^v||')"
 	CORECURRVER="${cur:-null}"
 	CORENEWWVER="${new:-null}"
 }

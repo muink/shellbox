@@ -31,10 +31,10 @@ strToString() {
 	local str
 	if [ -z "$1" ]; then
 		while read -r -t1 str; do
-			echo "$str" | $SED 's|^|"|;s|$|"|'
+			echo "$str" | sed 's|^|"|;s|$|"|'
 		done
 	else
-		echo "$1" | $SED 's|^|"|;s|$|"|'
+		echo "$1" | sed 's|^|"|;s|$|"|'
 	fi
 }
 
@@ -42,10 +42,10 @@ StringTostr() {
 	local str
 	if [ -z "$1" ]; then
 		while read -r -t1 str; do
-			echo "$str" | $SED 's|^"||;s|"$||'
+			echo "$str" | sed 's|^"||;s|"$||'
 		done
 	else
-		echo "$1" | $SED 's|^"||;s|"$||'
+		echo "$1" | sed 's|^"||;s|"$||'
 	fi
 }
 
@@ -83,7 +83,7 @@ jsonSetjson() {
 # func <objvar> [inputvar1] [inputvar2] ...
 jsonMerge() {
 	local __tmp=$1; shift
-	__tmp="$__tmp=\"\$( echo $(echo "$@" | $SED 's|\s|" "\$|g;s|^|"\$|;s|$|"|') | jq -nc 'reduce inputs as \$i (null; .+\$i)' )\""
+	__tmp="$__tmp=\"\$( echo $(echo "$@" | sed 's|\s|" "\$|g;s|^|"\$|;s|$|"|') | jq -nc 'reduce inputs as \$i (null; .+\$i)' )\""
 
 	eval "$__tmp"
 }

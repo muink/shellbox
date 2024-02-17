@@ -554,9 +554,9 @@ parse_uri() {
 
 # func <var> <subscription_url>
 parse_provider() {
-	echo "$1" | grep -qE "^(node|nodes|result|results|count|url|time)$" &&
+	echo "$1" | grep -qE "^(i|node|nodes|result|results|count|name|url|time)$" &&
 		{ logs err "parse_provider: Variable name '$1' is conflict.\n"; return 1; }
-	local node nodes count result results='[]' url="$2"
+	local i node nodes result results='[]' count=0 name url="$2"
 	[ -n "$1" ] && eval "$1=''" || return 1
 
 	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" | tr -d '\r' | sed 's|\s|%20|g')"
@@ -566,26 +566,36 @@ parse_provider() {
 	}
 
 	local time=$(date -u +%s%3N)
-	tmpfd 8 # Results
-	tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done # Generate $NPROC tokens
-	for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
-		read -u6 count # Take token
-		{
-			parse_uri result "${node#*>}"
-			isEmpty "$result" && { echo $count >&6; exit 0; }
-			# filter
-			name="$(jsonSelect result '.tag')"
-			filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
-
-			echo "${node%%>*} $result" >&8
-			let count++
-			echo $count >&6 # Release token
-		} &
-	done
-	wait
-	count=0
 	case "$OS" in
+		darwin)
+			for node in $nodes; do
+				[ -n "$node" ] && parse_uri result "$node"
+				isEmpty "$result" && continue
+				# filter
+				name="$(jsonSelect result '.tag')"
+				filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; continue; }
+
+				jsonSetjson results ".[$count]=\$ARGS.positional[0]" "$result"
+				let count++
+			done
+		;;
 		windows)
+			tmpfd 8 # Results
+			tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done # Generate $NPROC tokens
+			for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
+				read -u6 count # Take token
+				{
+					parse_uri result "${node#*>}"
+					isEmpty "$result" && { echo $count >&6; exit 0; }
+					# filter
+					name="$(jsonSelect result '.tag')"
+					filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
+
+					echo "${node%%>*} $result" >&8
+					let count++
+					echo $count >&6 # Release token
+				} &
+			done; wait; count=0
 			for i in $(seq 1 $NPROC); do
 				read -u6
 				count=$[ $count + $REPLY ]
@@ -597,16 +607,33 @@ parse_provider() {
 				done
 				jsonSet results '.-[null]'
 			fi
+			unfd 8; unfd 6
 		;;
 		*)
+			tmpfd 8 # Results
+			tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done # Generate $NPROC tokens
+			for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
+				read -u6 count # Take token
+				{
+					parse_uri result "${node#*>}"
+					isEmpty "$result" && { echo $count >&6; exit 0; }
+					# filter
+					name="$(jsonSelect result '.tag')"
+					filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
+
+					echo "${node%%>*} $result" >&8
+					let count++
+					echo $count >&6 # Release token
+				} &
+			done; wait; count=0
 			count=$[ $( head -n$NPROC /proc/$$/fd/6 | tr '\n' '+') 0 ]
 			if [ $count -ne 0 ]; then
 				results="$( head -n$count /proc/$$/fd/8 | sort -n | sed -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
 				results="[${results:0:-1}]"
 			fi
+			unfd 8; unfd 6
 		;;
 	esac
-	unfd 8; unfd 6
 	time=$[ $(date -u +%s%3N) - $time ]
 	logs yeah "Successfully fetched $count nodes of total $(echo "$nodes"|wc -l|tr -d " ") from '$url'.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"

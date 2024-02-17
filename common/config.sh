@@ -86,7 +86,7 @@ updateProvider() {
 	local provider total="$(jsonSelect providers 'length')" count=0
 	local node_result UA FILTER
 
-	local time=$(date -u +%s%3N)
+	local time=$(date -u +%s%3N) i k
 	for i in $(seq 0 $[ $total -1 ]); do
 		provider="$(jsonSelect providers ".[$i]")"
 		# Keys: url tag #subgroup #prefix ua filter

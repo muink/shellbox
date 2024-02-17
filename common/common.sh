@@ -6,6 +6,7 @@
 #
 
 export CLR_RST='\033[0m'
+export CLR_WINK='\033[5m'
 export CLR_RED='\033[0;31m'
 export CLR_GREEN='\033[0;32m'
 export CLR_YELLOW='\033[0;33m'

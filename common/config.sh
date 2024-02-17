@@ -86,7 +86,7 @@ updateProvider() {
 	local provider total="$(jsonSelect providers 'length')" count=0
 	local node_result UA FILTER
 
-	local time=$($DATE -u +%s%3N)
+	local time=$(date -u +%s%3N)
 	for i in $(seq 0 $[ $total -1 ]); do
 		provider="$(jsonSelect providers ".[$i]")"
 		# Keys: url tag #subgroup #prefix ua filter
@@ -100,7 +100,7 @@ updateProvider() {
 		echo -n "$node_result" > "$SUBSDIR/$tag.json"
 		let count++
 	done
-	time=$[ $($DATE -u +%s%3N) - $time ]
+	time=$[ $(date -u +%s%3N) - $time ]
 	logs yeah "Successfully updated $count providers of total $total.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"
 }

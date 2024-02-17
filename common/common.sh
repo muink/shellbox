@@ -35,7 +35,7 @@ yeah() {
 
 # func <err|warn|note|yeah> <msg>
 logs() {
-	[ -n "$ENLOGFILE" ] && { echo -ne "[$($DATE --iso-8601="seconds")]: $(${1:-note} 2>&1) $2" >> "$MAINLOG"; return 0; }
+	[ -n "$ENLOGFILE" ] && { echo -ne "[$(date --iso-8601="seconds")]: $(${1:-note} 2>&1) $2" >> "$MAINLOG"; return 0; }
 	${1:-note} "$2"
 }
 
@@ -69,7 +69,7 @@ downloadTo() {
 
 # func <str>
 calcStringMD5() {
-	echo -n "$1" | $MD5 | awk '{print $1}'
+	echo -n "$1" | md5sum | awk '{print $1}'
 }
 
 # func <str>

@@ -65,7 +65,7 @@ depCheck() {
 			if [ "$errcount" -gt 0 ]; then
 				for dep in $misss; do
 					case "$dep" in
-						gmd5sum|gdate|ghead|gtail|gsort)
+						cut|date|head|md5sum|mkfifo|seq|sort|tail|tr|wc)
 							err "Missing dependencies: coreutils, Please install manually using the homebrew.\n"
 						;;
 						gsed)
@@ -99,7 +99,7 @@ depCheck() {
 						curl)
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n"
 						;;
-						unzip|tar|seq|wc|awk|mkfifo|tr|sed.exe|md5sum.exe|date.exe|head.exe|tail.exe|sort.exe|getopt.exe)
+						cut|date|head|md5sum|mkfifo|seq|sort|tail|tr|wc|awk|getopt.exe|sed.exe|tar|unzip)
 							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n"
 						;;
 						jq)

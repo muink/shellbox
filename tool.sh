@@ -54,38 +54,24 @@ export PATH="$BINADIR:$PATH"
 # ENV
 getSysinfo || { pause; exit; }
 if [ "$OS" = "darwin" ]; then
+	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$PATH"
 	export SINGBOX=sing-box
 	export SED=gsed
-	export MD5=gmd5sum
-	export DATE=gdate
-	export HEAD=ghead
-	export TAIL=gtail
-	export SORT=gsort
 	export GETOPT=ggetopt
 elif [ "$OS" = "windows" ]; then
 	export SINGBOX=sing-box.exe
 	export SED=sed.exe
-	export MD5=md5sum.exe
-	export DATE=date.exe
-	export HEAD=head.exe
-	export TAIL=tail.exe
-	export SORT=sort.exe
 	export GETOPT=getopt.exe
 else
 	export SINGBOX=sing-box
 	export SED=sed
-	export MD5=md5sum
-	export DATE=date
-	export HEAD=head
-	export TAIL=tail
-	export SORT=sort
 	export GETOPT=getopt
 fi
-DEPENDENCIES="curl unzip tar seq wc cut mkfifo tr jq $SED $MD5 $DATE $HEAD $TAIL $SORT $GETOPT"
+DEPENDENCIES="cut date head md5sum mkfifo seq sort tail tr wc $AWK curl $GETOPT jq $SED tar unzip"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
-	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | $SORT -nu | $TAIL -n1) +1]
+	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | sort -nu | tail -n1) +1]
 
 
 # Getargs

@@ -53,16 +53,10 @@ export PATH="$BINADIR:$PATH"
 [ -d "$DASHDIR" ] || mkdir -p "$DASHDIR"
 # ENV
 getSysinfo || { pause; exit; }
-if [ "$OS" = "darwin" ]; then
+[ "$OS" = "darwin" ] &&
 	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$PATH"
-	export SINGBOX=sing-box
-elif [ "$OS" = "windows" ]; then
-	export SINGBOX=sing-box.exe
-else
-	export SINGBOX=sing-box
-fi
-DEPENDENCIES="awk cut date getopt head md5sum mkfifo sed seq sort tail tr wc curl jq tar unzip"
 depCheck || { pause; exit; }
+export SINGBOX=sing-box$( [ "$OS" = "windows" ] && echo .exe)
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
 	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | sort -nu | tail -n1) +1]

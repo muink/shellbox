@@ -47,6 +47,7 @@ getSysinfo() {
 }
 
 depCheck() {
+	local DEPENDENCIES="awk cut date getopt head md5sum mkfifo sed seq sort tail tr wc curl jq tar unzip"
 	local dep errcount=0 misss
 	for dep in $DEPENDENCIES; do
 		if ! command -v $dep >/dev/null; then

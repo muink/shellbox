@@ -554,9 +554,9 @@ parse_uri() {
 
 # func <var> <subscription_url>
 parse_provider() {
-	echo "$1" | grep -qE "^(i|node|nodes|result|results|count|name|url|time)$" &&
+	echo "$1" | grep -qE "^(i|node|nodes|result|results|total|count|name|url|time)$" &&
 		{ logs err "parse_provider: Variable name '$1' is conflict.\n"; return 1; }
-	local i node nodes result results='[]' count=0 name url="$2"
+	local i node nodes result results='[]' total count name url="$2"
 	[ -n "$1" ] && eval "$1=''" || return 1
 
 	nodes="$(decodeBase64Str "$(wfetch "$url" "$UA")" | tr -d '\r' | sed 's|\s|%20|g')"
@@ -564,6 +564,7 @@ parse_provider() {
 		logs warn "parse_provider: Unable to resolve resource from provider '$url'.\n"
 		return 1
 	}
+	total=$(echo "$nodes" | wc -l) count=0
 
 	local time=$(date -u +%s%3N)
 	case "$OS" in
@@ -576,6 +577,7 @@ parse_provider() {
 				filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; continue; }
 
 				jsonSetjson results ".[$count]=\$ARGS.positional[0]" "$result"
+				progress "$total" "$count"
 				let count++
 			done
 		;;
@@ -592,6 +594,7 @@ parse_provider() {
 					filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
 
 					echo "${node%%>*} $result" >&8
+					progress "$[ $total /$NPROC ]" "$count"
 					let count++
 					echo $count >&6 # Release token
 				} &
@@ -622,6 +625,7 @@ parse_provider() {
 					filterCheck "$name" "$FILTER" && { logs note "parse_provider: Skipping node: $name.\n"; echo $count >&6; exit 0; }
 
 					echo "${node%%>*} $result" >&8
+					progress "$[ $total /$NPROC ]" "$count"
 					let count++
 					echo $count >&6 # Release token
 				} &

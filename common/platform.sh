@@ -71,7 +71,7 @@ depCheck() {
 						sed)
 							err "Missing dependencies: gnu-sed, Please install manually using the homebrew.\n"
 						;;
-						ggetopt)
+						getopt)
 							if [ -x "$(brew --prefix)/opt/gnu-getopt/bin/getopt" ]; then
 								ln -s "$(brew --prefix)/opt/gnu-getopt/bin/getopt" "$(brew --prefix)/bin/ggetopt"
 								let errcount--
@@ -99,7 +99,7 @@ depCheck() {
 						curl)
 							err "Win10+/MinGW64 already includes curl, please upgrade MinGW64 or upgrade your system.\n"
 						;;
-						cut|date|head|md5sum|mkfifo|sed|seq|sort|tail|tr|wc|awk|getopt.exe|tar|unzip)
+						cut|date|getopt|head|md5sum|mkfifo|sed|seq|sort|tail|tr|wc|awk|tar|unzip)
 							err "MinGW64 already includes $dep, Please upgrade MinGW64.\n"
 						;;
 						jq)

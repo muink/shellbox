@@ -54,17 +54,14 @@ export PATH="$BINADIR:$PATH"
 # ENV
 getSysinfo || { pause; exit; }
 if [ "$OS" = "darwin" ]; then
-	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$PATH"
+	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
 	export SINGBOX=sing-box
-	export GETOPT=ggetopt
 elif [ "$OS" = "windows" ]; then
 	export SINGBOX=sing-box.exe
-	export GETOPT=getopt.exe
 else
 	export SINGBOX=sing-box
-	export GETOPT=getopt
 fi
-DEPENDENCIES="cut date head md5sum mkfifo sed seq sort tail tr wc $AWK curl $GETOPT jq tar unzip"
+DEPENDENCIES="cut date getopt head md5sum mkfifo sed seq sort tail tr wc $AWK curl jq tar unzip"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
@@ -72,7 +69,7 @@ depCheck || { pause; exit; }
 
 
 # Getargs
-GETARGS=$($GETOPT -n $(basename $0) -o gVhue -l update,generate,version,help -- "$@")
+GETARGS=$(getopt -n $(basename $0) -o gVhue -l update,generate,version,help -- "$@")
 [ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
 eval set -- "$GETARGS"
 ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")

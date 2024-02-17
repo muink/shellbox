@@ -54,14 +54,14 @@ export PATH="$BINADIR:$PATH"
 # ENV
 getSysinfo || { pause; exit; }
 if [ "$OS" = "darwin" ]; then
-	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$PATH"
+	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$PATH"
 	export SINGBOX=sing-box
 elif [ "$OS" = "windows" ]; then
 	export SINGBOX=sing-box.exe
 else
 	export SINGBOX=sing-box
 fi
-DEPENDENCIES="cut date getopt head md5sum mkfifo sed seq sort tail tr wc $AWK curl jq tar unzip"
+DEPENDENCIES="awk cut date getopt head md5sum mkfifo sed seq sort tail tr wc curl jq tar unzip"
 depCheck || { pause; exit; }
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||

@@ -113,7 +113,10 @@ verifyConfigs() {
 		;'
 
 	JQFUNC_configs='def configs:
-		;'
+		def loop($i):
+			if $i >= length then empty else (.[$i] | config | gsub("\\$i"; "\($i)")) // loop($i+1) end;
+		if type == "array" and length > 0 then loop(0)
+		else "No configs available." end;'
 
 	if [ -n "$configs" ]; then
 		rcode="$(jsonSelect configs "$JQFUNC_config $JQFUNC_configs configs" )"

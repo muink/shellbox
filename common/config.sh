@@ -109,10 +109,27 @@ updateProvider() {
 verifyConfigs() {
 	local configs="$1" rcode
 
-	JQFUNC_config='def config:
-		;'
+	local JQFUNC_config='def config:
+		def verify($k):
+			# Required
+			if $k == "output" then
+				if type == "string" and test("^[[:word:]\\.]+$") then empty else 1 end
+			elif $k == "enabled" then
+				if type == "boolean" then empty else 1 end
+			elif $k == "providers" then
+				providers
+			elif $k == "templates" then
+				templates
+			else empty end
+			| if . == 1 then "Key [\"\($k)\"] of the config [$i] is invalid." else gsub("\\$k"; "\($k)") end;
+		if type == "object" and length > 0 then
+			(.output | verify("output"))
+			// (.enabled | verify("enabled"))
+			// (.providers | verify("providers"))
+			// (.templates | verify("templates"))
+		else "Config [$i] is invalid." end;'
 
-	JQFUNC_configs='def configs:
+	local JQFUNC_configs='def configs:
 		def loop($i):
 			if $i >= length then empty else (.[$i] | config | gsub("\\$i"; "\($i)")) // loop($i+1) end;
 		if type == "array" and length > 0 then loop(0)

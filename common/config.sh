@@ -91,7 +91,7 @@ updateProvider() {
 		provider="$(jsonSelect providers ".[$i]")"
 		# Keys: url tag #subgroup #prefix ua filter
 		for k in url tag ua filter; do
-			eval "$k=\"\$(jsonSelect provider '.$k')\""
+			eval "local $k=\"\$(jsonSelect provider '.$k')\""
 		done
 		# Updating
 		UA="$ua" FILTER="$filter"
@@ -172,5 +172,24 @@ buildConfig() {
 	verifyProviders "$providers" || return 1
 	verifyConfigs "$configs" || return 1
 
-	echo tag subgroup prefix
+	local config total="$(jsonSelect configs 'length')" count=0
+	local cfg_result
+
+	local time=$(date -u +%s%3N) i k
+	for i in $(seq 0 $[ $total -1 ]); do
+		config="$(jsonSelect configs ".[$i]")"
+		# Keys: output enabled providers templates
+		for k in output enabled providers templates; do
+			eval "local $k=\"\$(jsonSelect config '.$k')\""
+		done
+		# Updating
+		[ "$enabled" = "true" ] || continue
+		build_config cfg_result "$templates" "$providers" || continue
+
+		echo "$cfg_result" > "$CONFDIR/$output"
+		let count++
+	done
+	time=$[ $(date -u +%s%3N) - $time ]
+	logs yeah "Successfully built $count configs of total $total.\n"
+	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"
 }

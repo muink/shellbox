@@ -109,6 +109,25 @@ updateProvider() {
 verifyConfigs() {
 	local configs="$1" rcode
 
+	local JQFUNC_providers='def providers:
+		def loop($q):
+			if $q >= length then empty else
+				if (.[$q] | type == "string" and test("^[[:word:]]+$")) then empty, loop($q+1)
+				else "Provider [\($q)] of the config [$i] is invalid." end
+			end;
+		if type == "array" then loop(0)
+		else 1 end;'
+
+	local JQFUNC_templates='def templates:
+		def loop($q):
+			if $q >= length then empty else
+				if (.[$q] | type == "string" and test("^[[:word:]\\.]+$")) then empty, loop($q+1)
+				else "Template [\($q)] of the config [$i] is invalid." end
+			end;
+		if type == "string" and test("^[[:word:]\\.]+$") then empty
+		elif type == "array" and length > 0 then loop(0)
+		else 1 end;'
+
 	local JQFUNC_config='def config:
 		def verify($k):
 			# Required
@@ -136,7 +155,7 @@ verifyConfigs() {
 		else "No configs available." end;'
 
 	if [ -n "$configs" ]; then
-		rcode="$(jsonSelect configs "$JQFUNC_config $JQFUNC_configs configs" )"
+		rcode="$(jsonSelect configs "$JQFUNC_providers $JQFUNC_templates $JQFUNC_config $JQFUNC_configs configs" )"
 	else
 		rcode="No configs available."
 	fi

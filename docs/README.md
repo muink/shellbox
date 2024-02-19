@@ -67,3 +67,52 @@
   }
 }
 ```
+
+## Templates
+
+``` json
+{
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "Proxy",
+      "outbounds": [
+        "Auto",
+        "🇸🇬 SG Nodes",
+        "{all_group}" // {all_group}: all subscriptions's selector nodes, will be ignore if subgroup not seted
+      ],
+      "default": "Auto"
+    },
+    {
+      "type": "selector",
+      "tag": "Netfilx",
+      "outbounds": [
+        "Auto",
+        "🇸🇬 SG Nodes",
+        "{sub_1_group}" // {sub_1_group}: all sub_1's selector nodes, will be ignore if subgroup not seted
+      ],
+      "default": "Auto"
+    },
+    {
+      "type": "urltest",
+      "tag": "Auto",
+      "outbounds": [
+        "{all}" // {all}: all subscriptions's nodes
+      ],
+      "url": "https://www.gstatic.com/generate_204",
+      "interval": "15m"
+    },
+    {
+      "type": "selector",
+      "tag": "🇸🇬 SG Nodes",
+      "outbounds": [
+        "{sub_1}", // {sub_1}: all sub_1's nodes
+        "{sub_2}" // {sub_2}: all sub_2's nodes
+      ],
+      "filter": [ // Optional filter
+        { "action": "include", "regex": "🇸🇬|SG|sg|Singapore|新加坡|狮城" }
+      ]
+    }
+  ]
+}
+```

@@ -27,6 +27,9 @@ export JQFUNC_urid='def urid:
 export JQFUNC_push='def push($e):
 	.[length]=$e;'
 
+export JQFUNC_insert='def insert($i; $e):
+	[.[0:$i],[$e],.[$i:]] | add;'
+
 strToString() {
 	local str
 	if [ -z "$1" ]; then
@@ -59,13 +62,13 @@ jsonSelect() {
 	local obj="${!1}" filters="$2"
 	shift 2
 
-	eval "echo \"\$obj\" | jq -c --args '$JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
+	eval "echo \"\$obj\" | jq -c --args '$JQFUNC_insert $JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
 }
 
 # func <objvar> <filters> [args]
 jsonSet() {
 	local __tmp
-	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '$JQFUNC_urid ${2:-.}' \"\$@\" )\""
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '$JQFUNC_insert $JQFUNC_urid ${2:-.}' \"\$@\" )\""
 	shift 2
 
 	eval "$__tmp"
@@ -74,7 +77,7 @@ jsonSet() {
 # func <objvar> <filters> [jsonargs]
 jsonSetjson() {
 	local __tmp
-	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '$JQFUNC_urid ${2:-.}' \"\$@\" )\""
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '$JQFUNC_insert $JQFUNC_urid ${2:-.}' \"\$@\" )\""
 	shift 2
 
 	eval "$__tmp"

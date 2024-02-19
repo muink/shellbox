@@ -602,7 +602,7 @@ parse_provider() {
 			count=$[ $( head -n$NPROC /proc/$$/fd/6 | tr '\n' '+') 0 ]
 			if [ $count -ne 0 ]; then
 				results="$( head -n$count /proc/$$/fd/8 | sort -n | sed -E 's|^[0-9]+\s*||' | tr '\n' ',' )"
-				results="[${results:0:-1}]"
+				results="[${results:0: -1}]"
 			fi
 			unfd 8; unfd 6
 		;;

@@ -14,7 +14,7 @@ export JQFUNC_filterCheck='def filterCheck($name):
 				else loop($i+1) end
 			end;
 		loop(0);
-	exclude;'
+	if length > 0 then exclude else empty end;'
 
 # func <url>
 urldecode() {
@@ -646,7 +646,48 @@ build_config() {
 	eval "jsonMergeFiles result $(jsonSelect templates '@sh')" || { logs err "build_config: Templates merge failed.\n"; popd; return 1; }
 	popd >/dev/null
 	local outbounds="$(jsonSelect result '.outbounds')"
-	echo $outbounds
+	#echo $outbounds
+
+	local JQFUNC_insert_providers='def insert_providers($im; $filter):
+		if type == "array" and length > 0 then
+			foreach ($im | keys_unsorted[]) as $tag (.;
+				$im[$tag].subgroup as $subgroup
+				| ($im[$tag].prefix|length) as $prefixlength
+				| [$im[$tag].nodes[].tag | (strange($prefixlength;null)) as $name | select($filter | filterCheck($name)//false | not)] as $subnode
+				# {all_group} -> $subgroup[],{all_group}
+				| first(index("{all_group}")) as $index | if $index then
+					insertArray($index; $subgroup)
+				else . end
+				# {sub_tag_group} -> $subgroup[]
+				| first(index("{\($tag)_group}")) as $index | if $index then
+					del(.[$index]) | insertArray($index; $subgroup)
+				else . end
+				# {all} -> filter(nodes[].tag),{all}
+				| first(index("{all}")) as $index | if $index then
+					insertArray($index; $subnode)
+				else . end
+				# {sub_tag} -> filter(nodes[].tag)
+				| first(index("{\($tag)}")) as $index | if $index then
+					del(.[$index]) | insertArray($index; $subnode)
+				else . end
+			)
+			| [select(.[] | test("^({.*})$") | not)]
+		else . end;'
+
+	local JQFUNC_outbound='def outbound($im):
+		if (.type | test("^(selector|urltest)$")) then
+			if .filter and (.filter | filter//false | not) then
+				.filter as $filter | del(.filter)
+			else . end
+			| .outbounds=(.outbounds | insert_providers($im; $filter))
+		else . end;'
+
+	local JQFUNC_outbounds='def outbounds($im):
+		def loop($i):
+			if $i >= length then empty else
+				(.[$i] | outbound($im)), loop($i+1)
+			end;
+		[loop(0)];'
 
 	if [ "$(jsonSelect tags 'length')" -gt 0 ]; then
 		jsonSetjson import '[$ARGS.positional[0][] | select(.tag | test("^(\( $ARGS.positional[1] | join("|") ))$")) | {(.tag): .}] | add' "$PROVIDERS" "$tags"
@@ -657,12 +698,22 @@ build_config() {
 				| .$k.nodes=[ \$ARGS.positional[0] | .[] | .tag=\$prefix+.tag ]" \
 				"$(cat "$SUBSDIR/$k.json")"
 		done
-		echo $import
-
-		echo subgroup tag.json
+		#echo $import
+		jsonSetjson outbounds \
+			"$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'$ARGS.positional[0] as $im
+			| outbounds($im)
+			# subgroup
+			| foreach ($im | keys_unsorted[]) as $tag (.;
+				[$im[$tag].nodes[].tag] as $nodenames
+				| foreach $im[$tag].subgroup[] as $subgroup (.;
+					push({"type":"selector","tag":$subgroup,"outbounds":$nodenames})
+				)
+			)
+			# nodes
+			| insertArray(length; [$im[].nodes[]])' \
+			"$import"
 	fi
 
-	echo 'pres outbounds del(.filter) del("{all_group}", "{all}")'
-
+	jsonSetjson result '.outbounds=$ARGS.positional[0]' "$outbounds"
 	eval "$1=\"\$result\""
 }

@@ -33,6 +33,12 @@ export JQFUNC_insert='def insert($i; $e):
 export JQFUNC_insertArray='def insertArray($i; $e):
 	[.[0:$i],$e,.[$i:]] | add;'
 
+export JQFUNC_strange='def strange($offset; $length):
+	(if $length == null then null
+	elif $length < 0 then length + $length +1
+	else $offset + $length end) as $endset
+	| split("")[$offset:$endset] | add;'
+
 strToString() {
 	local str
 	if [ -z "$1" ]; then
@@ -65,13 +71,13 @@ jsonSelect() {
 	local obj="${!1}" filters="$2"
 	shift 2
 
-	eval "echo \"\$obj\" | jq -c --args '$JQFUNC_insert $JQFUNC_insertArray $JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
+	eval "echo \"\$obj\" | jq -c --args '$JQFUNC_insert $JQFUNC_insertArray $JQFUNC_strange $JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
 }
 
 # func <objvar> <filters> [args]
 jsonSet() {
 	local __tmp
-	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '$JQFUNC_insert $JQFUNC_insertArray $JQFUNC_urid ${2:-.}' \"\$@\" )\""
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '$JQFUNC_insert $JQFUNC_insertArray $JQFUNC_strange $JQFUNC_urid ${2:-.}' \"\$@\" )\""
 	shift 2
 
 	eval "$__tmp"
@@ -80,7 +86,7 @@ jsonSet() {
 # func <objvar> <filters> [jsonargs]
 jsonSetjson() {
 	local __tmp
-	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '$JQFUNC_insert $JQFUNC_insertArray $JQFUNC_urid ${2:-.}' \"\$@\" )\""
+	__tmp="$1=\"\$( echo '${!1}' | jq -c --jsonargs '$JQFUNC_insert $JQFUNC_insertArray $JQFUNC_strange $JQFUNC_urid ${2:-.}' \"\$@\" )\""
 	shift 2
 
 	eval "$__tmp"

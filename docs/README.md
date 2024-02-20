@@ -26,7 +26,7 @@
       "prefix": "[erma] ", // Optional. Add prefix for all nodes currently subscription.
       "ua": "passwall", // Optional. Sent User-Agent.
       "filter": [ // Optional. Pre-filter nodes.
-        { "action": "include", "regex": "🇸🇬|SG|sg|Singapore|新加坡|狮城" }
+        { "action": "include", "regex": "🇸🇬|SG|sg|Singapore|新加坡|狮城" } // The action of the first filter will be used as the default action.
       ]
     }
   ],

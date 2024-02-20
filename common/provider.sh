@@ -623,7 +623,7 @@ filterCheck() {
 		'$ARGS.positional[0] as $name
 		| def exclude:
 			def loop($i):
-				if $i >= length then empty else
+				if $i >= length then .[0].action == "include" else
 					.[$i].regex as $regex
 					| if ($name | test($regex;null)) then .[$i].action == "exclude"
 					else loop($i+1) end

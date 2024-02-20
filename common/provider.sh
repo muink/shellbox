@@ -649,9 +649,10 @@ build_config() {
 	#echo $outbounds
 
 	local JQFUNC_insert_providers='def insert_providers($im; $filter):
-		if type == "array" and length > 0 then
-			foreach ($im | keys_unsorted[]) as $tag (.;
-				$im[$tag].subgroup as $subgroup
+		def loop($i):
+			if $i >= ($im | length) then . else
+				($im | keys_unsorted[$i]) as $tag
+				| $im[$tag].subgroup as $subgroup
 				| ($im[$tag].prefix|length) as $prefixlength
 				| [$im[$tag].nodes[].tag | (strange($prefixlength;null)) as $name | select($filter | filterCheck($name)//false | not)] as $subnode
 				# {all_group} -> $subgroup[],{all_group}
@@ -670,8 +671,9 @@ build_config() {
 				| first(index("{\($tag)}")) as $index | if $index then
 					del(.[$index]) | insertArray($index; $subnode)
 				else . end
-			)
-			| [select(.[] | test("^({.*})$") | not)]
+				| loop($i+1)
+			end;
+		if type == "array" and length > 0 then loop(0) | [.[] | select(test("^({.*})$") | not)]
 		else . end;'
 
 	local JQFUNC_outbound='def outbound($im):

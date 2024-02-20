@@ -642,7 +642,7 @@ build_outbound() {
 	local k import='{}' result="$2" tags="$3"
 	[ -n "$1" ] && eval "$1=''" || return 1
 
-	local JQFUNC_insert_providers='def insert_providers($im; $filter):
+	local JQFUNC_insert_providers="$JQFUNC_filterCheck"'def insert_providers($im; $filter):
 		def loop($i):
 			if $i >= ($im | length) then . else
 				($im | keys_unsorted[$i]) as $tag
@@ -670,7 +670,7 @@ build_outbound() {
 		if type == "array" and length > 0 then loop(0) | [.[] | select(test("^({.*})$") | not)]
 		else . end;'
 
-	local JQFUNC_outbound='def outbound($im):
+	local JQFUNC_outbound="$JQFUNC_filter $JQFUNC_insert_providers"'def outbound($im):
 		if (.type | test("^(selector|urltest)$")) then
 			(if (.filter | length > 0 and filter//false | not) then .filter
 			else null end) as $filter
@@ -678,7 +678,7 @@ build_outbound() {
 			| .outbounds=(.outbounds | insert_providers($im; $filter))
 		else . end;'
 
-	local JQFUNC_outbounds='def outbounds($im):
+	local JQFUNC_outbounds="$JQFUNC_outbound"'def outbounds($im):
 		def loop($i):
 			if $i >= length then . else
 				.[$i]=(.[$i] | outbound($im))
@@ -707,7 +707,7 @@ build_outbound() {
 		done
 		#echo $import
 		jsonSetjson result \
-			"$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds $JQFUNC_addsubgroup"'$ARGS.positional[0] as $im
+			"$JQFUNC_outbounds $JQFUNC_addsubgroup"'$ARGS.positional[0] as $im
 			| outbounds($im)
 			# subgroup
 			| addsubgroup($im)
@@ -715,7 +715,7 @@ build_outbound() {
 			| insertArray(length; [$im[].nodes[]])' \
 			"$import"
 	else
-		jsonSet result "$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'outbounds({"del":{"subgroup":[],"prefix":"","nodes":[]}})'
+		jsonSet result "$JQFUNC_outbounds"'outbounds({"del":{"subgroup":[],"prefix":"","nodes":[]}})'
 	fi
 
 	eval "$1=\"\$result\""

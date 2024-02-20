@@ -34,7 +34,7 @@ verifyProviders() {
 		elif type == "array" then loop(0)
 		else 1 end;'
 
-	local JQFUNC_provider='def provider:
+	local JQFUNC_provider="$JQFUNC_filter $JQFUNC_subgroup"'def provider:
 		def verify($k):
 			# Required
 			if $k == "url" then
@@ -61,14 +61,14 @@ verifyProviders() {
 			// (.filter | verify("filter"))
 		else "Provider [$i] is invalid." end;'
 
-	local JQFUNC_providers='def providers:
+	local JQFUNC_providers="$JQFUNC_provider"'def providers:
 		def loop($i):
 			if $i >= length then empty else (.[$i] | provider | gsub("\\$i"; "\($i)")) // loop($i+1) end;
 		if type == "array" and length > 0 then loop(0)
 		else "No providers available." end;'
 
 	if [ -n "$providers" ]; then
-		rcode="$(jsonSelect providers "$JQFUNC_subgroup $JQFUNC_filter $JQFUNC_provider $JQFUNC_providers providers" )"
+		rcode="$(jsonSelect providers "$JQFUNC_providers"'providers' )"
 	else
 		rcode="No providers available."
 	fi
@@ -127,7 +127,7 @@ verifyConfigs() {
 		if type == "array" and length > 0 then loop(0)
 		else 1 end;'
 
-	local JQFUNC_config='def config:
+	local JQFUNC_config="$JQFUNC_providers $JQFUNC_templates"'def config:
 		def verify($k):
 			# Required
 			if $k == "output" then
@@ -147,14 +147,14 @@ verifyConfigs() {
 			// (.templates | verify("templates"))
 		else "Config [$i] is invalid." end;'
 
-	local JQFUNC_configs='def configs:
+	local JQFUNC_configs="$JQFUNC_config"'def configs:
 		def loop($i):
 			if $i >= length then empty else (.[$i] | config | gsub("\\$i"; "\($i)")) // loop($i+1) end;
 		if type == "array" and length > 0 then loop(0)
 		else "No configs available." end;'
 
 	if [ -n "$configs" ]; then
-		rcode="$(jsonSelect configs "$JQFUNC_providers $JQFUNC_templates $JQFUNC_config $JQFUNC_configs configs" )"
+		rcode="$(jsonSelect configs "$JQFUNC_configs"'configs' )"
 	else
 		rcode="No configs available."
 	fi

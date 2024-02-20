@@ -75,6 +75,14 @@ jsonSelect() {
 }
 
 # func <objvar> <filters> [args]
+jsonSelectjson() {
+	local obj="${!1}" filters="$2"
+	shift 2
+
+	eval "echo \"\$obj\" | jq -c --jsonargs '$JQFUNC_push $JQFUNC_insert $JQFUNC_insertArray $JQFUNC_strange $JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
+}
+
+# func <objvar> <filters> [args]
 jsonSet() {
 	local __tmp
 	__tmp="$1=\"\$( echo '${!1}' | jq -c --args '$JQFUNC_push $JQFUNC_insert $JQFUNC_insertArray $JQFUNC_strange $JQFUNC_urid ${2:-.}' \"\$@\" )\""

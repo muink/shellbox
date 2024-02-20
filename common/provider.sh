@@ -686,10 +686,11 @@ build_config() {
 
 	local JQFUNC_outbounds='def outbounds($im):
 		def loop($i):
-			if $i >= length then empty else
-				(.[$i] | outbound($im)), loop($i+1)
+			if $i >= length then . else
+				.[$i]=(.[$i] | outbound($im))
+				| loop($i+1)
 			end;
-		[loop(0)];'
+		loop(0);'
 
 	if [ "$(jsonSelect tags 'length')" -gt 0 ]; then
 		jsonSetjson import '[$ARGS.positional[0][] | select(.tag | test("^(\( $ARGS.positional[1] | join("|") ))$")) | {(.tag): .}] | add' "$PROVIDERS" "$tags"

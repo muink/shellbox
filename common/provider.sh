@@ -635,18 +635,12 @@ filterCheck() {
 	[ "$rcode" = "true" ] || return 1
 }
 
-# func <var> <templates> <tags>
-build_config() {
-	echo "$1" | grep -qE "^(k|result|import|templates|tags|outbounds)$" &&
+# func <var> <outbounds> <tags>
+build_outbound() {
+	echo "$1" | grep -qE "^(k|import|result|tags)$" &&
 		{ logs err "build_config: Variable name '$1' is conflict.\n"; return 1; }
-	local k result='{}' import='{}' templates="$2" tags="$3"
+	local k import='{}' result="$2" tags="$3"
 	[ -n "$1" ] && eval "$1=''" || return 1
-
-	pushd "$TEMPDIR" >/dev/null
-	eval "jsonMergeFiles result $(jsonSelect templates '@sh')" || { logs err "build_config: Templates merge failed.\n"; popd; return 1; }
-	popd >/dev/null
-	local outbounds="$(jsonSelect result '.outbounds')"
-	#echo $outbounds
 
 	local JQFUNC_insert_providers='def insert_providers($im; $filter):
 		def loop($i):
@@ -702,7 +696,7 @@ build_config() {
 				"$(cat "$SUBSDIR/$k.json")"
 		done
 		#echo $import
-		jsonSetjson outbounds \
+		jsonSetjson result \
 			"$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'$ARGS.positional[0] as $im
 			| outbounds($im)
 			# subgroup
@@ -716,9 +710,8 @@ build_config() {
 			| insertArray(length; [$im[].nodes[]])' \
 			"$import"
 	else
-		jsonSet outbounds "$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'outbounds({"del":{"subgroup":[],"prefix":"","nodes":[]}})'
+		jsonSet result "$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'outbounds({"del":{"subgroup":[],"prefix":"","nodes":[]}})'
 	fi
 
-	jsonSetjson result '.outbounds=$ARGS.positional[0]' "$outbounds"
 	eval "$1=\"\$result\""
 }

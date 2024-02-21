@@ -172,7 +172,7 @@ buildConfig() {
 	verifyConfigs "$configs" || return 1
 
 	local config total="$(jsonSelect configs 'length')" count=0
-	local cfg_result PROVIDERS="$(jsonSelect providers 'del(.[].url, .[].ua, .[].filter)')"
+	local cfg_result outbounds PROVIDERS="$(jsonSelect providers 'del(.[].url, .[].ua, .[].filter)')"
 
 	local time=$(date -u +%s%3N) i k
 	for i in $(seq 0 $[ $total -1 ]); do
@@ -183,7 +183,14 @@ buildConfig() {
 		done
 		# Updating
 		[ "$enabled" = "true" ] || continue
-		build_config cfg_result "$templates" "$providers" || continue
+
+		pushd "$TEMPDIR" >/dev/null
+		eval "jsonMergeFiles cfg_result $(jsonSelect templates '@sh')" || { logs err "build_config: Templates merge failed.\n"; popd; continue; }
+		popd >/dev/null
+		outbounds="$(jsonSelect cfg_result '.outbounds')"
+
+		build_outbound outbounds "$outbounds" "$providers" || continue
+		jsonSetjson cfg_result '.outbounds=$ARGS.positional[0]' "${outbounds:-[]}"
 
 		echo "$cfg_result" | jq > "$CONFDIR/$output.json"
 		let count++

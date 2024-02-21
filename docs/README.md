@@ -32,7 +32,7 @@
   ],
   "configs": [
     {
-      "output": "ruleset_tun.json", // Required. The target file to build.
+      "output": "ruleset_tun", // Required. The target file to build.
       "enabled": true, // Required. Build or not.
       "providers": [ // Required. Providers to import.
         "sub_1", // .providers[0].tag

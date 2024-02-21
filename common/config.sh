@@ -131,7 +131,7 @@ verifyConfigs() {
 		def verify($k):
 			# Required
 			if $k == "output" then
-				if type == "string" and test("^[[:word:]\\.]+$") then empty else 1 end
+				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
 			elif $k == "enabled" then
 				if type == "boolean" then empty else 1 end
 			elif $k == "providers" then
@@ -185,7 +185,7 @@ buildConfig() {
 		[ "$enabled" = "true" ] || continue
 		build_config cfg_result "$templates" "$providers" || continue
 
-		echo "$cfg_result" | jq > "$CONFDIR/$output"
+		echo "$cfg_result" | jq > "$CONFDIR/$output.json"
 		let count++
 	done
 	time=$[ $(date -u +%s%3N) - $time ]

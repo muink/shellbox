@@ -715,6 +715,8 @@ build_config() {
 			# nodes
 			| insertArray(length; [$im[].nodes[]])' \
 			"$import"
+	else
+		jsonSet outbounds "$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'outbounds({"del":{"subgroup":[],"prefix":"","nodes":[]}})'
 	fi
 
 	jsonSetjson result '.outbounds=$ARGS.positional[0]' "$outbounds"

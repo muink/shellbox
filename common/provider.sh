@@ -686,6 +686,16 @@ build_outbound() {
 			end;
 		loop(0);'
 
+	local JQFUNC_addsubgroup='def addsubgroup($im):
+		def loop($i):
+			if $i >= ($im | length) then . else
+				($im | keys_unsorted[$i]) as $tag
+				| [$im[$tag].nodes[].tag] as $nodenames
+				| insertArray(length; [$im[$tag].subgroup[] | {"type":"selector","tag":.,"outbounds":$nodenames}])
+				| loop($i+1)
+			end;
+		loop(0);'
+
 	if [ "$(jsonSelect tags 'length')" -gt 0 ]; then
 		jsonSetjson import '[$ARGS.positional[0][] | select(.tag | test("^(\( $ARGS.positional[1] | join("|") ))$")) | {(.tag): .}] | add' "$PROVIDERS" "$tags"
 		for k in $(jsonSelect tags '.[]'); do
@@ -697,15 +707,10 @@ build_outbound() {
 		done
 		#echo $import
 		jsonSetjson result \
-			"$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds"'$ARGS.positional[0] as $im
+			"$JQFUNC_filter $JQFUNC_filterCheck $JQFUNC_insert_providers $JQFUNC_outbound $JQFUNC_outbounds $JQFUNC_addsubgroup"'$ARGS.positional[0] as $im
 			| outbounds($im)
 			# subgroup
-			| foreach ($im | keys_unsorted[]) as $tag (.;
-				[$im[$tag].nodes[].tag] as $nodenames
-				| foreach $im[$tag].subgroup[] as $subgroup (.;
-					push({"type":"selector","tag":$subgroup,"outbounds":$nodenames})
-				)
-			)
+			| addsubgroup($im)
 			# nodes
 			| insertArray(length; [$im[].nodes[]])' \
 			"$import"

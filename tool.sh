@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-VERSION=0.4
+VERSION=0.5
 LOGO="\
 =================================================
           ___ _        _ _ ___              　
@@ -217,7 +217,7 @@ case "$MENUID" in
 			fi
 		fi
 		pause
-		exit
+		exec -c "$0"
 	;;
 	5)
 		checkCoreVersion

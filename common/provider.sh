@@ -678,9 +678,9 @@ build_config() {
 
 	local JQFUNC_outbound='def outbound($im):
 		if (.type | test("^(selector|urltest)$")) then
-			if .filter and (.filter | filter//false | not) then
-				.filter as $filter | del(.filter)
-			else . end
+			(if (.filter | length > 0 and filter//false | not) then .filter
+			else null end) as $filter
+			| del(.filter)
 			| .outbounds=(.outbounds | insert_providers($im; $filter))
 		else . end;'
 

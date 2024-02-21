@@ -103,7 +103,7 @@ jsonSetjson() {
 # func <objvar> [inputvar1] [inputvar2] ...
 jsonMerge() {
 	local __tmp=$1; shift
-	__tmp="$__tmp=\"\$( echo $(echo "$@" | sed 's|\s|" "\$|g;s|^|"\$|;s|$|"|') | jq -nc 'reduce inputs as \$i (null; .+\$i)' )\""
+	__tmp="$__tmp=\"\$( echo $(echo "$@" | sed 's|\s|" "\$|g;s|^|"\$|;s|$|"|') | jq -c 'reduce inputs as \$i (.; .*\$i)' )\""
 
 	eval "$__tmp"
 }
@@ -111,7 +111,7 @@ jsonMerge() {
 # func <objvar> [file1] [file1] ...
 jsonMergeFiles() {
 	local __tmp
-	__tmp="$1=\"\$( jq -nc 'reduce inputs as \$i (null; .+\$i)' \"\$@\" )\""
+	__tmp="$1=\"\$( jq -c 'reduce inputs as \$i (.; .*\$i)' \"\$@\" )\""
 	shift
 
 	eval "$__tmp"

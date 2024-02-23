@@ -199,3 +199,78 @@ buildConfig() {
 	logs yeah "Successfully built $count configs of total $total.\n"
 	logs yeah "Total time: $[ $time / 60000 ]m$[ $time / 1000 % 60 ].$[ $time % 1000 ]s.\n"
 }
+
+# func <settings>
+verifySettings() {
+	local settings="$1" rcode
+
+	local JQFUNC_settings='def settings:
+		def clash_api:
+			if type == "object" then
+				(.controller_port | if . == null or type == "number" then empty else 1 end)
+				// (.secret | if . == null or type == "string" then empty else 1 end)
+			else 1 end;
+		def verify($k):
+			# Required
+			if $k == "config" then
+				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
+			elif $k == "start_at_boot" then
+				if type == "boolean" then empty else 1 end
+			elif $k == "set_system_proxy" then
+				if type == "boolean" then empty else 1 end
+			elif $k == "service_mode" then
+				if type == "boolean" then empty else 1 end
+			elif $k == "mixin" then
+				if type == "boolean" then empty else 1 end
+			# Optional
+			elif $k == "allow_lan" then
+				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "clash_api" then
+				if . == null then empty else clash_api end
+			elif $k == "ipv6" then
+				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "log_level" then
+				if . == null or type == "string" then empty else 1 end
+			elif $k == "tun_mode" then
+				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "mixed_port" then
+				if . == null or type == "number" then empty else 1 end
+			elif $k == "dns_port" then
+				if . == null or type == "number" then empty else 1 end
+			elif $k == "default_interface" then
+				if . == null or type == "string" then empty else 1 end
+			else empty end
+			| if . == 1 then "Key [\"\($k)\"] of the settings is invalid." else . end;
+		if type == "object" and length > 0 then
+			(.default_interface | verify("default_interface"))
+			// (.dns_port | verify("dns_port"))
+			// (.mixed_port | verify("mixed_port"))
+			// (.tun_mode | verify("tun_mode"))
+			// (.log_level | verify("log_level"))
+			// (.ipv6 | verify("ipv6"))
+			// (.clash_api | verify("clash_api"))
+			// (.allow_lan | verify("allow_lan"))
+			// (.mixin | verify("mixin"))
+			// (.service_mode | verify("service_mode"))
+			// (.set_system_proxy | verify("set_system_proxy"))
+			// (.start_at_boot | verify("start_at_boot"))
+			// (.config | verify("config"))
+		else "No settings exist." end;'
+
+	if [ -n "$settings" ]; then
+		rcode="$(jsonSelect settings "$JQFUNC_settings"'settings' )"
+	else
+		rcode="No settings exist."
+	fi
+
+	[ -z "$rcode" ] || { logs err "verifySettings: $rcode\n"; return 1; }
+	return 0
+}
+
+runSB() {
+	[ -x "$(command -v "$SINGBOX")" ] || { logs err "sing-box is not installed.\n"; return 1; }
+	local setting="$(cat "$MAINSET")"
+	local settings="$(jsonSelect setting '.settings')"
+	verifySettings "$settings" || return 1
+
+}

@@ -60,15 +60,18 @@ export SINGBOX=sing-box$( [ "$OS" = "windows" ] && echo .exe)
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
 	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | sort -nu | tail -n1) +1]
+[ "$OS" = "windows" ] &&
+	export RUNICFG="/tmp/shellbox/client.json" ||
+	export RUNICFG="/var/run/shellbox/client.json"
 
 
 # Getargs
-GETARGS=$(getopt -n $(basename $0) -o gVhue -l update,generate,version,help -- "$@")
+GETARGS=$(getopt -n $(basename $0) -o eguVh -l generate,update,run,version,help -- "$@")
 [ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
 eval set -- "$GETARGS"
 ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")
 # Duplicate options
-for ru in -h\|--help -V\|--version -g\|--generate -u\|--update; do
+for ru in -h\|--help -V\|--version -e\|-e -g\|--generate -u\|--update --run\|--run; do
 	eval "echo \"\$ERROR\" | grep -qE \" ${ru%|*}[ .+]* ($ru)| ${ru#*|}[ .+]* ($ru)\"" && { err "Option '$ru' option is repeated\n"; exit; }
 done
 # Independent options
@@ -90,6 +93,7 @@ Options:\n\
   -e                       -- Redirect error message to log file\n\
   -g, --generate           -- Rebuild configs\n\
   -u, --update             -- Update subscriptions\n\
+  --run                    -- Run sing-box\n\
   -V, --version            -- Returns version\n\
   -h, --help               -- Returns help info\n\
 \n"
@@ -124,6 +128,9 @@ if [ "$#" -gt 1 ]; then
 			-u|--update)
 				UPDATESUBS=true
 			;;
+			--run)
+				RRUN=true
+			;;
 			--)
 				shift
 				break
@@ -131,12 +138,9 @@ if [ "$#" -gt 1 ]; then
 		esac
 		shift
 	done
-	if [ -n "$UPDATESUBS" ]; then
-		updateProvider || exit 1
-	fi
-	if [ -n "$GENERATOR" ]; then
-		buildConfig || exit 1
-	fi
+	if [ -n "$UPDATESUBS" ]; then updateProvider || exit 1; fi
+	if [ -n "$GENERATOR" ];  then buildConfig    || exit 1; fi
+	if [ -n "$RRUN" ];       then runSB          || exit 1; fi
 	exit
 fi
 # Menu
@@ -152,6 +156,7 @@ $LOGO
         4. Upgrade shellbox
         5. Upgrade core
       ------------------------------
+        a. Run sing-box with current config
         x. Exit
 =================================================
 EOF
@@ -161,13 +166,22 @@ echo -ne "Please select: [ ]\b\b"
 read -t 60 MENUID
 MENUID=${MENUID:-x}
 case "$MENUID" in
+	a)
+		clear
+		cat <<- EOF
+		$LOGO
+
+		EOF
+		runSB
+		pause
+	;;
 	1)
 		clear
 		cat <<- EOF
 		$LOGO
 
 		EOF
-		buildConfig || { pause; exit; }
+		buildConfig
 		pause
 	;;
 	2)
@@ -176,7 +190,7 @@ case "$MENUID" in
 		$LOGO
 
 		EOF
-		updateProvider || { pause; exit; }
+		updateProvider
 		pause
 	;;
 	3)

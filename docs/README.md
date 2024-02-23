@@ -49,21 +49,23 @@
       ]
     }
   ],
-  "quicksettings": {
+  "settings": {
     "default_interface": "",
+    "dns_port": 2153, // inbounds[] will be overwritten.
+    "mixed_port": 2188, // inbounds[] will be overwritten.
+    "tun_mode": false, // inbounds[] will be overwritten.
     "log_level": "info", // "trace", "debug", "info", "warn", "error", "fatal", "panic"
-    "dns_port": 2153, // The first inbound will be overwritten.
-    "mixed_port": 2188, // The first inbound will be overwritten.
     "ipv6": true,
-    "allow_lan": true,
-    "set_system_proxy": true,
-    "service_mode": false,
-    "start_at_boot": false,
     "clash_api": {
-      "external_controller": "[::1]:19988",
+      "controller_port": 19988,
       "secret": ""
     },
-    "config": "ruleset_tun.json"
+    "allow_lan": true,
+    "mixin": true, // If false, the above fields will not be applyed
+    "service_mode": false,
+    "set_system_proxy": true,
+    "start_at_boot": false,
+    "config": "ruleset_tun"
   }
 }
 ```

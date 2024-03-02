@@ -231,7 +231,7 @@ case "$MENUID" in
 			fi
 		fi
 		pause
-		exec -c "$0"
+		exec "$0"
 	;;
 	5)
 		checkCoreVersion

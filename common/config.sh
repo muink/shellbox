@@ -273,4 +273,32 @@ runSB() {
 	local settings="$(jsonSelect setting '.settings')"
 	verifySettings "$settings" || return 1
 
+	lcoal sets='[
+		"default_interface",
+		"dns_port",
+		"mixed_port",
+		"tun_mode",
+		"log_level",
+		"ipv6",
+		"clash_api",
+		"allow_lan",
+		"mixin",
+		"service_mode",
+		"set_system_proxy",
+		"start_at_boot",
+		"config"
+	]'
+	sets="$(jsonSelectjson settings \
+		'def export($keys):
+			def loop($i):
+				if $i >= ($keys | length) then empty else
+					if $keys[$i] then "local \($keys[$i])=\u0027\(.[$keys[$i]])\u0027"
+					else "local \($keys[$i])=" end, loop($i+1)
+				end;
+			[loop(0)] | join(";");
+		export($ARGS.positional[0])' \
+		"$sets" \
+	)"
+	eval "$sets"
+
 }

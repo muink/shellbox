@@ -56,7 +56,7 @@ getSysinfo || { pause; exit; }
 [ "$OS" = "darwin" ] &&
 	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$PATH"
 depCheck || { pause; exit; }
-export SINGBOX=sing-box$( [ "$OS" = "windows" ] && echo .exe)
+export SINGBOX=shellbox_core$( [ "$OS" = "windows" ] && echo .exe)
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
 	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | sort -nu | tail -n1) +1]
@@ -244,23 +244,22 @@ case "$MENUID" in
 		if [ "$CORECURRVER" = "$CORENEWWVER" ]; then
 			yeah "Already the latest, no need to upgrade.\n\n"
 		else
-			#pgrep -f "$BINADIR/sing-box(.exe)"
 			if [ "$OS" = "windows" ]; then
 				downloadTo "https://github.com/SagerNet/sing-box/releases/download/v$CORENEWWVER/sing-box-$CORENEWWVER-$OS-$ARCH.zip" "/tmp/sing-box-$CORENEWWVER.zip" \
 				&& unzip -qo "/tmp/sing-box-$CORENEWWVER.zip" sing-box-$CORENEWWVER-$OS-$ARCH/sing-box.exe -d "/tmp/" \
-				&& mv -f "/tmp/sing-box-$CORENEWWVER-$OS-$ARCH/sing-box.exe" "$BINADIR/sing-box.exe" >/dev/null \
+				&& mv -f "/tmp/sing-box-$CORENEWWVER-$OS-$ARCH/sing-box.exe" "$BINADIR/$SINGBOX" >/dev/null \
 				&& yeah "Upgrade completed.\n\n" \
 				|| err "Upgrade failed.\n\n" 1
 			else
 				downloadTo "https://github.com/SagerNet/sing-box/releases/download/v$CORENEWWVER/sing-box-$CORENEWWVER-$OS-$ARCH.tar.gz" "/tmp/sing-box-$CORENEWWVER.tar.gz" \
 				&& tar -C "/tmp/" -xzf "/tmp/sing-box-$CORENEWWVER.tar.gz" sing-box-$CORENEWWVER-$OS-$ARCH/sing-box \
-				&& mv -f "/tmp/sing-box-$CORENEWWVER-$OS-$ARCH/sing-box" "$BINADIR/sing-box" >/dev/null \
-				&& chmod +x "$BINADIR/sing-box" \
+				&& mv -f "/tmp/sing-box-$CORENEWWVER-$OS-$ARCH/sing-box" "$BINADIR/$SINGBOX" >/dev/null \
+				&& chmod +x "$BINADIR/$SINGBOX" \
 				&& yeah "Upgrade completed.\n\n" \
 				|| err "Upgrade failed.\n\n" 1
 			fi
 			if [ "$?" = "1" ]; then
-				err "Please download binary manually from \"https://github.com/SagerNet/sing-box/releases/tag/v$CORENEWWVER\" and put to \"$BINADIR/sing-box\"\n" 0
+				err "Please download binary manually from \"https://github.com/SagerNet/sing-box/releases/tag/v$CORENEWWVER\" and put to \"$BINADIR/$SINGBOX\"\n" 0
 			fi
 			getCoreFeatures
 		fi

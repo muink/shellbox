@@ -20,6 +20,7 @@ By: Anya Lin$(printf "%$[ 40 - ${#VERSION} ]s" v$VERSION)
 export MAINDIR="$(cd $(dirname $0); pwd)"
 export BINADIR="$MAINDIR/bin"
 export COMMDIR="$MAINDIR/common"
+export CMDSDIR="$MAINDIR/scripts"
 export MAINSET="$MAINDIR/settings.json"
 export MAINLOG="$MAINDIR/shellbox.log"
 

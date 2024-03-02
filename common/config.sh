@@ -301,4 +301,14 @@ runSB() {
 	)"
 	eval "$sets"
 
+	# platform
+	case "$OS" in
+		windows)
+		;;
+		darwin)
+		;;
+		*)
+		;;
+	esac
+
 }

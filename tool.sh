@@ -65,12 +65,12 @@ export SINGBOX=shellbox_core$( [ "$OS" = "windows" ] && echo .exe)
 
 
 # Getargs
-GETARGS=$(getopt -n $(basename $0) -o eguVh -l generate,update,run,version,help -- "$@")
+GETARGS=$(getopt -n $(basename $0) -o eguVh -l generate,update,setup,version,help -- "$@")
 [ "$?" -eq 0 ] || { err "Use the --help option get help\n"; exit; }
 eval set -- "$GETARGS"
 ERROR=$(echo "$GETARGS" | sed "s|'[^']*'||g;s| -- .*$||;s| --$||")
 # Duplicate options
-for ru in -h\|--help -V\|--version -e\|-e -g\|--generate -u\|--update --run\|--run; do
+for ru in -h\|--help -V\|--version -e\|-e -g\|--generate -u\|--update --setup\|--setup; do
 	eval "echo \"\$ERROR\" | grep -qE \" ${ru%|*}[ .+]* ($ru)| ${ru#*|}[ .+]* ($ru)\"" && { err "Option '$ru' option is repeated\n"; exit; }
 done
 # Independent options
@@ -92,7 +92,7 @@ Options:\n\
   -e                       -- Redirect error message to log file\n\
   -g, --generate           -- Rebuild configs\n\
   -u, --update             -- Update subscriptions\n\
-  --run                    -- Run sing-box\n\
+  --setup                  -- Setup sing-box\n\
   -V, --version            -- Returns version\n\
   -h, --help               -- Returns help info\n\
 \n"
@@ -127,8 +127,8 @@ if [ "$#" -gt 1 ]; then
 			-u|--update)
 				UPDATESUBS=true
 			;;
-			--run)
-				RRUN=true
+			--setup)
+				SETSB=true
 			;;
 			--)
 				shift
@@ -139,7 +139,7 @@ if [ "$#" -gt 1 ]; then
 	done
 	if [ -n "$UPDATESUBS" ]; then updateProvider || exit 1; fi
 	if [ -n "$GENERATOR" ];  then buildConfig    || exit 1; fi
-	if [ -n "$RRUN" ];       then runSB          || exit 1; fi
+	if [ -n "$SETSB" ];      then setSB          || exit 1; fi
 	exit
 fi
 # Menu
@@ -155,7 +155,7 @@ $LOGO
         4. Upgrade shellbox
         5. Upgrade core
       ------------------------------
-        a. Run sing-box with current config
+        a. Setup sing-box with current config
         x. Exit
 =================================================
 EOF
@@ -171,7 +171,7 @@ case "$MENUID" in
 		$LOGO
 
 		EOF
-		runSB
+		setSB
 		pause
 	;;
 	1)

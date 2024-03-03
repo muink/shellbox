@@ -267,7 +267,7 @@ verifySettings() {
 	return 0
 }
 
-runSB() {
+setSB() {
 	[ -x "$(command -v "$SINGBOX")" ] || { logs err "sing-box is not installed.\n"; return 1; }
 	local setting="$(cat "$MAINSET")"
 	local settings="$(jsonSelect setting '.settings')"

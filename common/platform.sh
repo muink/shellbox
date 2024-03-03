@@ -114,3 +114,10 @@ depCheck() {
 	esac
 	[ "$errcount" -le 0 ] || return 1
 }
+
+# func [unix_path]
+getWindowsPath() {
+	[ -n "$1" ] && pushd "$1" >/dev/null
+	"$CMDSDIR/getcd.cmd"
+	[ -n "$1" ] && popd >/dev/null
+}

@@ -160,3 +160,21 @@ windows_service() {
 		check) [ -z "$rcode" ] && _checkProcess && { logs yeah "windows_service: Service is runing.\n"; };;
 	esac
 }
+
+# func <install|uninstall> [config_path]
+windows_startup() {
+	[ -n "$1" ] || return 1
+
+	case "$1" in
+		install)
+			start "" "$(getWindowsPath "$CMDSDIR")\\mklnk.cmd" \
+				"$(getWindowsPath "$BINADIR")\\$SINGBOX" \
+				"run -D '$(getWindowsPath "$WORKDIR")' -c '${2////\\}'" \
+				"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\shellbox.lnk" \
+				"$(getWindowsPath)\\docs\\assets\\logo_16_24_32_64_96_256.ico"
+		;;
+		uninstall)
+			rm -f ~/AppData/Roaming/Microsoft/Windows/Start\ Menu/Programs/Startup/shellbox.lnk 2>/dev/null
+		;;
+	esac
+}

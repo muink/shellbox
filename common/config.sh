@@ -317,9 +317,9 @@ runSB() {
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode
 				if [ "$service_mode" = "true" ]; then
-					windows_service install "$config"
+					windows_service install
 				else
-					windows_startup install "$config"
+					windows_startup install
 				fi
 			else
 				windows_service uninstall

@@ -122,10 +122,11 @@ getWindowsPath() {
 	[ -n "$1" ] && popd >/dev/null
 }
 
-# func <install|uninstall|start|stop|restart|enable|disable> [config_path]
+# func <install|uninstall|start|stop|restart|enable|disable>
 windows_service() {
 	[ -n "$1" ] || return 1
 	local ServiceName=shboxsvc
+	local cfg="${RUNICFG//$WORKDIR\//}"
 
 	local rcode=$(sc query $ServiceName >/dev/null || echo $?)
 	_start() { sc query $ServiceName | grep -q "RUNNING" || sc start $ServiceName; }
@@ -140,7 +141,7 @@ windows_service() {
 		install)
 			_delete; sleep 3
 			_killProcess
-			sc create $ServiceName binPath= "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${2////\\}\"" DisplayName= "ShellBox Service" start= auto
+			sc create $ServiceName binPath= "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${cfg////\\}\"" DisplayName= "ShellBox Service" start= auto
 			sc description $ServiceName "ShellBox, a lightweight sing-box client base on shell/bash"
 			sc failure $ServiceName reset= 0 actions= restart/5000/restart/10000//
 		;;
@@ -161,24 +162,25 @@ windows_service() {
 	esac
 }
 
-# func <target> [config_path]
+# func <target>
 windows_mklnk() {
 	[ -n "$1" ] || return 1
+	local cfg="${RUNICFG//$WORKDIR\//}"
 
 	start "" "$(getWindowsPath "$CMDSDIR")\\mklnk.cmd" \
 		"$(getWindowsPath "$BINADIR")\\$SINGBOX" \
-		"run -D '$(getWindowsPath "$WORKDIR")' -c '${2////\\}'" \
+		"run -D '$(getWindowsPath "$WORKDIR")' -c '${cfg////\\}'" \
 		"$1" \
 		"$(getWindowsPath)\\docs\\assets\\logo_16_24_32_64_96_256.ico"
 }
 
-# func <install|uninstall> [config_path]
+# func <install|uninstall>
 windows_startup() {
 	[ -n "$1" ] || return 1
 
 	case "$1" in
 		install)
-			windows_mklnk "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\shellbox.lnk" "$2"
+			windows_mklnk "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\shellbox.lnk"
 		;;
 		uninstall)
 			rm -f ~/AppData/Roaming/Microsoft/Windows/Start\ Menu/Programs/Startup/shellbox.lnk 2>/dev/null

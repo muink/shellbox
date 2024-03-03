@@ -121,3 +121,42 @@ getWindowsPath() {
 	"$CMDSDIR/getcd.cmd"
 	[ -n "$1" ] && popd >/dev/null
 }
+
+# func <install|uninstall|start|stop|restart|enable|disable> [config_path]
+windows_service() {
+	[ -n "$1" ] || return 1
+	local ServiceName=shboxsvc
+
+	local rcode=$(sc query $ServiceName >/dev/null || echo $?)
+	_start() { sc query $ServiceName | grep -q "RUNNING" || sc start $ServiceName; }
+	_stop()  { sc query $ServiceName | grep -q "STOPPED" || sc stop $ServiceName; }
+	_enable()  { sc qc $ServiceName | grep -q "AUTO_START" || sc config $ServiceName start= auto; }
+	_disable() { sc qc $ServiceName | grep -q "DEMAND_START" || sc config $ServiceName start= demand; }
+	_delete() { [ -z "$rcode" ] && _stop && sc delete $ServiceName; }
+	_checkProcess() { tasklist | grep -qi "$SINGBOX"; }
+	_killProcess()  { tasklist | grep -qi "$SINGBOX" && taskkill /F /IM "$SINGBOX" >/dev/null; }
+
+	case "$1" in
+		install)
+			_delete; sleep 3
+			_killProcess
+			sc create $ServiceName binPath= "$(getWindowsPath "$BINADIR")\\$SINGBOX run -D '$(getWindowsPath "$WORKDIR")' -c '${2////\\}'" DisplayName= "ShellBox Service" start= auto
+			sc description $ServiceName "ShellBox, a lightweight sing-box client base on shell/bash"
+			sc failure $ServiceName reset= 0 actions= restart/5000/restart/10000//
+		;;
+		uninstall)
+			_delete; sleep 3
+			_killProcess
+		;;
+		start) [ -z "$rcode" ] && _start || { logs err "windows_service: Service not installed.\n"; return 1; };;
+		stop) [ -z "$rcode" ] && _stop;;
+		restart)
+			_stop; sleep 3
+			_killProcess
+			_start
+		;;
+		enable) [ -z "$rcode" ] && _enable;;
+		disable) [ -z "$rcode" ] && _disable;;
+		check) [ -z "$rcode" ] && _checkProcess && { logs yeah "windows_service: Service is runing.\n"; };;
+	esac
+}

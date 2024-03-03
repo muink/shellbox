@@ -63,7 +63,7 @@
     "allow_lan": true,
     "mixin": true, // If false, the above fields will not be applyed
     "service_mode": false,
-    "set_system_proxy": true,
+    "set_system_proxy": true, // 127.0.0.1:$mixed_port
     "start_at_boot": false,
     "config": "ruleset_tun"
   }

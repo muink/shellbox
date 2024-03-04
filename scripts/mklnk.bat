@@ -1,4 +1,5 @@
 :: ref: http://www.bathome.net/thread-33196-1-1.html
+@chcp 65001 >nul
 @echo off
 set "SrcFile=%~1"
 set "Args=%~2"

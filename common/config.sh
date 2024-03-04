@@ -274,6 +274,20 @@ setSB() {
 	local settings="$(jsonSelect setting '.settings')"
 	verifySettings "$settings" || return 1
 
+	_exportVar() {
+		jsonSelectjson "$1" \
+			'def export($keys; $prefix):
+				def loop($i):
+					if $i >= ($keys | length) then empty else
+						if $keys[$i] then "local \($prefix)\($keys[$i])=\u0027\(.[$keys[$i]])\u0027"
+						else "local \($prefix)\($keys[$i])=" end, loop($i+1)
+					end;
+				[loop(0)] | join(";");
+			export($ARGS.positional[0]; $ARGS.positional[1])' \
+			"$2" "\"$3\""
+	}
+
+	# settings
 	lcoal sets='[
 		"default_interface",
 		"sniff_override_destination",
@@ -289,17 +303,11 @@ setSB() {
 		"start_at_boot",
 		"config"
 	]'
-	sets="$(jsonSelectjson settings \
-		'def export($keys):
-			def loop($i):
-				if $i >= ($keys | length) then empty else
-					if $keys[$i] then "local \($keys[$i])=\u0027\(.[$keys[$i]])\u0027"
-					else "local \($keys[$i])=" end, loop($i+1)
-				end;
-			[loop(0)] | join(";");
-		export($ARGS.positional[0])' \
-		"$sets" \
-	)"
+	sets="$(_exportVar settings "$sets" )"
+	eval "$sets"
+	# clash_api
+	sets='["dashboard_params_type","controller_port","secret"]'
+	sets="$(_exportVar clash_api "$sets" clash_api_ )"
 	eval "$sets"
 
 	# platform

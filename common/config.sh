@@ -227,8 +227,6 @@ verifySettings() {
 				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "clash_api" then
 				if . == null then empty else clash_api end
-			elif $k == "ipv6" then
-				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "log_level" then
 				if . == null or type == "string" then empty else 1 end
 			elif $k == "tun_mode" then
@@ -247,7 +245,6 @@ verifySettings() {
 			// (.mixed_port | verify("mixed_port"))
 			// (.tun_mode | verify("tun_mode"))
 			// (.log_level | verify("log_level"))
-			// (.ipv6 | verify("ipv6"))
 			// (.clash_api | verify("clash_api"))
 			// (.allow_lan | verify("allow_lan"))
 			// (.mixin | verify("mixin"))
@@ -279,7 +276,6 @@ setSB() {
 		"mixed_port",
 		"tun_mode",
 		"log_level",
-		"ipv6",
 		"clash_api",
 		"allow_lan",
 		"mixin",

@@ -55,7 +55,6 @@
     "mixed_port": 2188, // inbounds[] will be overwritten.
     "tun_mode": false, // inbounds[] will be overwritten.
     "log_level": "info", // "trace", "debug", "info", "warn", "error", "fatal", "panic"
-    "ipv6": true,
     "clash_api": {
       "controller_port": 19988,
       "secret": ""

@@ -50,19 +50,20 @@
     }
   ],
   "settings": {
-    "default_interface": "",
-    "dns_port": 2153, // inbounds[] will be overwritten.
-    "mixed_port": 2188, // inbounds[] will be overwritten.
-    "tun_mode": false, // inbounds[] will be overwritten.
-    "log_level": "info", // "trace", "debug", "info", "warn", "error", "fatal", "panic"
+    "default_interface": "", // null:keepOriginal, "":auto gen by shellbox, "en0":en0
+    "dns_port": 2153, // null:keepOriginal, 2153:2153
+    "mixed_port": 2188, // null:keepOriginal, 2153:2188
+    "tun_mode": false, // null:keepOriginal, false:disableAll, true:overwriteAll by shellbox
+    "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "clash_api": {
-      "controller_port": 19988,
-      "secret": ""
+      "dashboard_params_type": "", // null:keepOriginal, "":"yacd", "clash", "yacd"
+      "controller_port": 19988, // null:keepOriginal, 19988:19988
+      "secret": "" // null:keepOriginal, "":auto gen by shellbox, "typepassword":typepassword
     },
-    "allow_lan": true,
-    "mixin": true, // If false, the above fields will not be applyed
+    "allow_lan": false, // null:keepOriginal, false:(0.0.0.0|::) -> ::1, true:(127.*.*.*|::1) -> ::
+    "mixin": true, // If false, the above fields will not be applyed, the config will remain as is
     "service_mode": false,
-    "set_system_proxy": true, // 127.0.0.1:$mixed_port
+    "set_system_proxy": false, // 127.0.0.1:$mixed_port; not work if $mixed_port is empty
     "start_at_boot": false,
     "config": "ruleset_tun"
   }

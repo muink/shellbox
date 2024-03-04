@@ -207,7 +207,8 @@ verifySettings() {
 	local JQFUNC_settings='def settings:
 		def clash_api:
 			if type == "object" then
-				(.controller_port | if . == null or type == "number" then empty else 1 end)
+				(.dashboard_params_type | if . == null or type == "string" then empty else 1 end)
+				// (.controller_port | if . == null or type == "number" then empty else 1 end)
 				// (.secret | if . == null or type == "string" then empty else 1 end)
 			else 1 end;
 		def verify($k):

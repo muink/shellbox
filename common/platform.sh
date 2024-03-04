@@ -187,3 +187,28 @@ windows_startup() {
 		;;
 	esac
 }
+
+getDefaultIfname() {
+	# ref:
+	# https://unix.stackexchange.com/questions/14961/how-to-find-out-which-interface-am-i-using-for-connecting-to-the-internet
+	# https://unix.stackexchange.com/questions/473803/how-to-find-out-the-interface-which-is-being-used-for-internet
+	# https://unix.stackexchange.com/questions/166999/how-to-display-the-ip-address-of-the-default-interface-with-internet-connection
+	# https://fasterthanli.me/series/making-our-own-ping/part-7
+	# https://stackoverflow.com/questions/22367173/get-default-gateway-from-batch-file
+	# https://stackoverflow.com/questions/8978670/what-do-windows-interface-names-look-like
+
+	case "$OS" in
+		windows)
+			#wmic Path Win32_IP4RouteTable Where "Destination='0.0.0.0'" Get InterfaceIndex | sed '1d'
+			#netsh interface ipv4 show interface
+			"$CMDSDIR/getifname.cmd" "$(route -4 print '0.*' | grep '0\.0\.0\.0' | awk '{print $5,$4}' | sort -n | head -n1 | awk '{print $2}')"
+		;;
+		darwin)
+			route -n get default | awk '/interface:/{print $NF}'
+		;;
+		linux)
+			ip route show default | sed -En 's|.+ dev (\S+) .+ metric ([0-9]+)|\2 \1|p' | sort -n | head -n1 | awk '{print $2}'
+			#route -n | awk '/^(default|0\.0\.0\.0)/{print $5,$8}' | sort -n | head -n1 | awk '{print $2}' # need net-tools
+		;;
+	esac
+}

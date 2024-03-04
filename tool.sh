@@ -55,6 +55,7 @@ export PATH="$BINADIR:$PATH"
 [ -d "$DASHDIR" ] || mkdir -p "$DASHDIR"
 # ENV
 getSysinfo || { pause; exit; }
+[ "$OS" = "windows" ] && getWindowsPath >/dev/null
 [ "$OS" = "darwin" ] &&
 	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$PATH"
 depCheck || { pause; exit; }

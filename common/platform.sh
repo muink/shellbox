@@ -167,7 +167,7 @@ windows_mklnk() {
 	[ -n "$1" ] || return 1
 	local cfg="${RUNICFG//$WORKDIR\//}"
 
-	start "" "$(getWindowsPath "$CMDSDIR")\\mklnk.cmd" \
+	start "" "$(getWindowsPath "$CMDSDIR")\\mklnk.bat" \
 		"$(getWindowsPath "$BINADIR")\\$SINGBOX" \
 		"run -D '$(getWindowsPath "$WORKDIR")' -c '${cfg////\\}'" \
 		"$1" \

@@ -348,6 +348,29 @@ setSB() {
 			local listenaddr='::1'
 			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(false)'
 		fi
+		# dns_port
+		[ -z "$dns_port" -o "$dns_port" = "null" ] ||
+			jsonSet inbounds \
+				"push({
+					\"type\": \"direct\",
+					\"tag\": \"shellbox-dns-in\",
+					\"listen\": \"$listenaddr\",
+					\"listen_port\": $dns_port
+				})"
+		# mixed_port
+		# set_system_proxy
+		# sniff_override_destination
+		[ -z "$mixed_port" -o "$mixed_port" = "null" ] ||
+			jsonSet inbounds \
+				"push({
+					\"type\": \"mixed\",
+					\"tag\": \"shellbox-mixed-in\",
+					\"listen\": \"$listenaddr\",
+					\"listen_port\": $mixed_port,
+					\"sniff\": true
+					${sniff_override_destination:+,\"sniff_override_destination\": $sniff_override_destination}
+					${set_system_proxy:+,\"set_system_proxy\": $set_system_proxy}
+				})"
 
 		echo "$config" | jq > "$RUNICFG"
 	else

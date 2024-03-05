@@ -326,6 +326,28 @@ setSB() {
 		# inbounds
 		local inbounds="$(jsonSelect config '.inbounds' 2>/dev/null)"
 		[ -n "$inbounds" ] || inbounds='{}'
+		# allow_lan
+		local JQFUNC_allow_lan='def allow_lan($s):
+			def loop($i):
+				if $i >= length then . else
+					if (.[$i] | type == "object" and length > 0) then
+						if $s then
+							if .[$i].listen and (.[$i].listen | test("^(127\\..*|::1)$")) then .[$i].listen="::" else . end
+						else
+							if .[$i].listen and (.[$i].listen | test("^(0\\..*|::)$")) then .[$i].listen="::1" else . end
+						end
+					else . end
+					| loop($i+1)
+				end;
+			if type == "array" and ($s | type == "boolean") then loop(0)
+			else . end;'
+		if   [ "$allow_lan" = "true"  ]; then
+			local listenaddr='::'
+			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(true)'
+		elif [ "$allow_lan" = "false" ]; then
+			local listenaddr='::1'
+			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(false)'
+		fi
 
 		echo "$config" | jq > "$RUNICFG"
 	else

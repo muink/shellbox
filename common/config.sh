@@ -319,6 +319,10 @@ setSB() {
 			| .experimental.cache_file.path="cache.db"
 			| .experimental.clash_api.external_ui=$ARGS.positional[1]' \
 			"${LOGSDIR//$WORKDIR\//}/$(date +"%F-%H%M").log" "${DASHDIR//$WORKDIR\//}"
+		# log_level
+		[ -z "$log_level" -o "$log_level" = "null" ] ||
+			jsonSet config '.log.level=$ARGS.positional[0]' "$log_level"
+
 
 		echo "$config" | jq > "$RUNICFG"
 	else

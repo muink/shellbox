@@ -310,6 +310,21 @@ setSB() {
 	sets="$(_exportVar clash_api "$sets" clash_api_ )"
 	eval "$sets"
 
+	# runtimeConfig Post-processing
+	if [ "$mixin" = "true" ]; then
+		local config="$(cat "$CONFDIR/$config.json")"
+
+		jsonSet config \
+			'.log.output=$ARGS.positional[0]
+			| .experimental.cache_file.path="cache.db"
+			| .experimental.clash_api.external_ui=$ARGS.positional[1]' \
+			"${LOGSDIR//$WORKDIR\//}/$(date +"%F-%H%M").log" "${DASHDIR//$WORKDIR\//}"
+
+		echo "$config" | jq > "$RUNICFG"
+	else
+		cp -f "$CONFDIR/$config.json" "$RUNICFG"
+	fi
+
 	# platform
 	case "$OS" in
 		windows)
@@ -327,8 +342,18 @@ setSB() {
 			fi
 		;;
 		darwin)
+			# service_mode
+			# start_at_boot
+			if [ "$start_at_boot" = "true" ]; then
+			else
+			fi
 		;;
-		*)
+		linux)
+			# service_mode
+			# start_at_boot
+			if [ "$start_at_boot" = "true" ]; then
+			else
+			fi
 		;;
 	esac
 

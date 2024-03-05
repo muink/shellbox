@@ -236,12 +236,15 @@ verifySettings() {
 				if . == null or type == "number" then empty else 1 end
 			elif $k == "dns_port" then
 				if . == null or type == "number" then empty else 1 end
+			elif $k == "sniff_override_destination" then
+				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "default_interface" then
 				if . == null or type == "string" then empty else 1 end
 			else empty end
 			| if . == 1 then "Key [\"\($k)\"] of the settings is invalid." else . end;
 		if type == "object" and length > 0 then
 			(.default_interface | verify("default_interface"))
+			// (.sniff_override_destination | verify("sniff_override_destination"))
 			// (.dns_port | verify("dns_port"))
 			// (.mixed_port | verify("mixed_port"))
 			// (.set_system_proxy | verify("set_system_proxy"))
@@ -273,6 +276,7 @@ setSB() {
 
 	lcoal sets='[
 		"default_interface",
+		"sniff_override_destination",
 		"dns_port",
 		"mixed_port",
 		"set_system_proxy",

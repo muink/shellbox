@@ -51,6 +51,7 @@
   ],
   "settings": {
     "default_interface": "", // null:keepOriginal, "":auto gen by shellbox, "en0":en0
+    "sniff_override_destination": false, // null:disable, false:disable, true:enable
     "dns_port": 2153, // null:keepOriginal, 2153:2153
     "mixed_port": 2188, // null:keepOriginal, 2153:2188
     "set_system_proxy": false, // 127.0.0.1:$mixed_port; not work if $mixed_port is empty. null:disable, false:disable, true:enable

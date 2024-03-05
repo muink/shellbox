@@ -217,8 +217,6 @@ verifySettings() {
 				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
 			elif $k == "start_at_boot" then
 				if type == "boolean" then empty else 1 end
-			elif $k == "set_system_proxy" then
-				if type == "boolean" then empty else 1 end
 			elif $k == "service_mode" then
 				if type == "boolean" then empty else 1 end
 			elif $k == "mixin" then
@@ -232,6 +230,8 @@ verifySettings() {
 				if . == null or type == "string" then empty else 1 end
 			elif $k == "tun_mode" then
 				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "set_system_proxy" then
+				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "mixed_port" then
 				if . == null or type == "number" then empty else 1 end
 			elif $k == "dns_port" then
@@ -244,13 +244,13 @@ verifySettings() {
 			(.default_interface | verify("default_interface"))
 			// (.dns_port | verify("dns_port"))
 			// (.mixed_port | verify("mixed_port"))
+			// (.set_system_proxy | verify("set_system_proxy"))
 			// (.tun_mode | verify("tun_mode"))
 			// (.log_level | verify("log_level"))
 			// (.clash_api | verify("clash_api"))
 			// (.allow_lan | verify("allow_lan"))
 			// (.mixin | verify("mixin"))
 			// (.service_mode | verify("service_mode"))
-			// (.set_system_proxy | verify("set_system_proxy"))
 			// (.start_at_boot | verify("start_at_boot"))
 			// (.config | verify("config"))
 		else "No settings exist." end;'
@@ -275,13 +275,13 @@ setSB() {
 		"default_interface",
 		"dns_port",
 		"mixed_port",
+		"set_system_proxy",
 		"tun_mode",
 		"log_level",
 		"clash_api",
 		"allow_lan",
 		"mixin",
 		"service_mode",
-		"set_system_proxy",
 		"start_at_boot",
 		"config"
 	]'
@@ -301,15 +301,6 @@ setSB() {
 	# platform
 	case "$OS" in
 		windows)
-			# set_system_proxy
-			if [ "$set_system_proxy" = "true" ]; then
-				reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" //v ProxyEnable //t REG_DWORD //d 1 //f
-				[ -n "$mixed_port" ] &&
-					reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" //v ProxyServer //t REG_SZ //d "127.0.0.1:$mixed_port" //f
-				reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" //v ProxyOverride //t REG_SZ //d 'localhost;*.local;*.lan;127.*;10.*;172.16.*;172.17.*;172.18.*;172.19.*;172.20.*;172.21.*;172.22.*;172.23.*;172.24.*;172.25.*;172.26.*;172.27.*;172.28.*;172.29.*;172.30.*;172.31.*;192.168.*;<local>' //f
-			else
-				reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" //v ProxyEnable //t REG_DWORD //d 0 //f
-			fi
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode

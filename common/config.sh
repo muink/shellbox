@@ -323,6 +323,9 @@ setSB() {
 		[ -z "$log_level" -o "$log_level" = "null" ] ||
 			jsonSet config '.log.level=$ARGS.positional[0]' "$log_level"
 
+		# inbounds
+		local inbounds="$(jsonSelect config '.inbounds' 2>/dev/null)"
+		[ -n "$inbounds" ] || inbounds='{}'
 
 		echo "$config" | jq > "$RUNICFG"
 	else

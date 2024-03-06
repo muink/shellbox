@@ -53,6 +53,7 @@
     "default_interface": "", // null:keepOriginal, "":auto gen by shellbox, "en0":en0
     "allow_lan": false, // null:keepOriginal, false:(0.0.0.0|::) -> ::1, true:(127.*.*.*|::1) -> ::
     "sniff_override_destination": false, // null:keepOriginal, false:disable, true:enable
+    "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "dns_port": 2153, // null:keepOriginal, 2153:2153
     "mixed_in": {
       "enabled": true, // null:keepOriginal, false:disable, true:enable
@@ -65,7 +66,6 @@
       "udp_timeout": "5m", // null:keepOriginal, "":keepOriginal, "5m":5m
       "stack": "mixed" // null:keepOriginal, "":keepOriginal, "system", "gvisor", "mixed"
     },
-    "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "clash_api": {
       "dashboard_params_type": "", // null:keepOriginal, "":keepOriginal, "clash", "yacd"
       "controller_port": 19988, // null:keepOriginal, 19988:19988

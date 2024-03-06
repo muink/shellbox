@@ -232,14 +232,14 @@ verifySettings() {
 				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "sniff_override_destination" then
 				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "log_level" then
+				if . == null or type == "string" then empty else 1 end
 			elif $k == "dns_port" then
 				if . == null or type == "number" then empty else 1 end
 			elif $k == "mixed_in" then
 				if . == null then empty else mixed_in end
 			elif $k == "tun_in" then
 				if . == null then empty else tun_in end
-			elif $k == "log_level" then
-				if . == null or type == "string" then empty else 1 end
 			elif $k == "clash_api" then
 				if . == null then empty else clash_api end
 			# Required
@@ -259,10 +259,10 @@ verifySettings() {
 			(.default_interface | verify("default_interface"))
 			// (.allow_lan | verify("allow_lan"))
 			// (.sniff_override_destination | verify("sniff_override_destination"))
+			// (.log_level | verify("log_level"))
 			// (.dns_port | verify("dns_port"))
 			// (.mixed_in | verify("mixed_in"))
 			// (.tun_in | verify("tun_in"))
-			// (.log_level | verify("log_level"))
 			// (.clash_api | verify("clash_api"))
 			// (.mixin | verify("mixin"))
 			// (.service_mode | verify("service_mode"))
@@ -303,10 +303,10 @@ setSB() {
 		"default_interface",
 		"allow_lan",
 		"sniff_override_destination",
+		"log_level",
 		"dns_port",
 		"mixed_in",
 		"tun_in",
-		"log_level",
 		"clash_api",
 		"mixin",
 		"service_mode",

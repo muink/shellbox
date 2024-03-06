@@ -212,34 +212,34 @@ verifySettings() {
 				// (.secret | if . == null or type == "string" then empty else 1 end)
 			else 1 end;
 		def verify($k):
+			# Optional
+			if $k == "default_interface" then
+				if . == null or type == "string" then empty else 1 end
+			elif $k == "sniff_override_destination" then
+				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "dns_port" then
+				if . == null or type == "number" then empty else 1 end
+			elif $k == "mixed_port" then
+				if . == null or type == "number" then empty else 1 end
+			elif $k == "set_system_proxy" then
+				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "tun_mode" then
+				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "log_level" then
+				if . == null or type == "string" then empty else 1 end
+			elif $k == "clash_api" then
+				if . == null then empty else clash_api end
+			elif $k == "allow_lan" then
+				if . == null or type == "boolean" then empty else 1 end
 			# Required
-			if $k == "config" then
-				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
-			elif $k == "start_at_boot" then
+			elif $k == "mixin" then
 				if type == "boolean" then empty else 1 end
 			elif $k == "service_mode" then
 				if type == "boolean" then empty else 1 end
-			elif $k == "mixin" then
+			elif $k == "start_at_boot" then
 				if type == "boolean" then empty else 1 end
-			# Optional
-			elif $k == "allow_lan" then
-				if . == null or type == "boolean" then empty else 1 end
-			elif $k == "clash_api" then
-				if . == null then empty else clash_api end
-			elif $k == "log_level" then
-				if . == null or type == "string" then empty else 1 end
-			elif $k == "tun_mode" then
-				if . == null or type == "boolean" then empty else 1 end
-			elif $k == "set_system_proxy" then
-				if . == null or type == "boolean" then empty else 1 end
-			elif $k == "mixed_port" then
-				if . == null or type == "number" then empty else 1 end
-			elif $k == "dns_port" then
-				if . == null or type == "number" then empty else 1 end
-			elif $k == "sniff_override_destination" then
-				if . == null or type == "boolean" then empty else 1 end
-			elif $k == "default_interface" then
-				if . == null or type == "string" then empty else 1 end
+			elif $k == "config" then
+				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
 			else empty end
 			| if . == 1 then "Key [\"\($k)\"] of the settings is invalid." else . end;
 		if type == "object" and length > 0 then

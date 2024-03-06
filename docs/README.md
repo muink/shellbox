@@ -54,8 +54,11 @@
     "allow_lan": false, // null:keepOriginal, false:(0.0.0.0|::) -> ::1, true:(127.*.*.*|::1) -> ::
     "sniff_override_destination": false, // null:keepOriginal, false:disable, true:enable
     "dns_port": 2153, // null:keepOriginal, 2153:2153
-    "mixed_port": 2188, // null:keepOriginal, 2153:2188
-    "set_system_proxy": false, // 127.0.0.1:$mixed_port; not work if $mixed_port is empty. null:disable, false:disable, true:enable
+    "mixed_in": {
+      "enabled": true, // null:keepOriginal, false:disable, true:enable
+      "port": 2188, // Required
+      "set_system_proxy": false // null:keepOriginal, false:disable, true:enable
+    },
     "tun_mode": false, // null:keepOriginal, false:disableAll, true:overwriteAll by shellbox
     "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "clash_api": {

@@ -205,6 +205,12 @@ verifySettings() {
 	local settings="$1" rcode
 
 	local JQFUNC_settings='def settings:
+		def mixed_in:
+			if type == "object" then
+				(.enabled | if . == null or type == "boolean" then empty else "enabled" end)
+				// (.port | if type == "number" then empty else "port" end)
+				// (.set_system_proxy | if . == null or type == "boolean" then empty else "set_system_proxy" end)
+			else 1 end;
 		def clash_api:
 			if type == "object" then
 				(.dashboard_params_type | if . == null or type == "string" then empty else "dashboard_params_type" end)
@@ -221,10 +227,8 @@ verifySettings() {
 				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "dns_port" then
 				if . == null or type == "number" then empty else 1 end
-			elif $k == "mixed_port" then
-				if . == null or type == "number" then empty else 1 end
-			elif $k == "set_system_proxy" then
-				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "mixed_in" then
+				if . == null then empty else mixed_in end
 			elif $k == "tun_mode" then
 				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "log_level" then
@@ -249,8 +253,7 @@ verifySettings() {
 			// (.allow_lan | verify("allow_lan"))
 			// (.sniff_override_destination | verify("sniff_override_destination"))
 			// (.dns_port | verify("dns_port"))
-			// (.mixed_port | verify("mixed_port"))
-			// (.set_system_proxy | verify("set_system_proxy"))
+			// (.mixed_in | verify("mixed_in"))
 			// (.tun_mode | verify("tun_mode"))
 			// (.log_level | verify("log_level"))
 			// (.clash_api | verify("clash_api"))
@@ -294,8 +297,7 @@ setSB() {
 		"allow_lan",
 		"sniff_override_destination",
 		"dns_port",
-		"mixed_port",
-		"set_system_proxy",
+		"mixed_in",
 		"tun_mode",
 		"log_level",
 		"clash_api",
@@ -305,6 +307,10 @@ setSB() {
 		"config"
 	]'
 	sets="$(_exportVar settings "$sets" )"
+	eval "$sets"
+	# mixed_in
+	sets='["enabled","port","set_system_proxy"]'
+	sets="$(_exportVar mixed_in "$sets" mixed_in_ )"
 	eval "$sets"
 	# clash_api
 	sets='["dashboard_params_type","controller_port","secret"]'
@@ -358,19 +364,20 @@ setSB() {
 					\"listen\": \"$listenaddr\",
 					\"listen_port\": $dns_port
 				})"
-		# mixed_port
-		# set_system_proxy
+		# mixed_in_enabled
+		# mixed_in_port
+		# mixed_in_set_system_proxy
 		# sniff_override_destination
-		isEmpty "$mixed_port" ||
+		[ "$mixed_in_enabled" = "true" ] &&
 			jsonSet inbounds \
 				"push({
 					\"type\": \"mixed\",
 					\"tag\": \"shellbox-mixed-in\",
 					\"listen\": \"$listenaddr\",
-					\"listen_port\": $mixed_port,
+					\"listen_port\": $mixed_in_port,
 					\"sniff\": true
 					$(isEmpty "$sniff_override_destination" || echo ,\"sniff_override_destination\": $sniff_override_destination)
-					$(isEmpty "$set_system_proxy" || echo ,\"set_system_proxy\": $set_system_proxy)
+					$(isEmpty "$mixed_in_set_system_proxy" || echo ,\"set_system_proxy\": $mixed_in_set_system_proxy)
 				})"
 
 		echo "$config" | jq > "$RUNICFG"

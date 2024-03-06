@@ -59,7 +59,12 @@
       "port": 2188, // Required
       "set_system_proxy": false // null:keepOriginal, false:disable, true:enable
     },
-    "tun_mode": false, // null:keepOriginal, false:disableAll, true:overwriteAll by shellbox
+    "tun_in": {
+      "enabled": false, // null:keepOriginal, false:disableAll, true:overwriteAll by shellbox
+      "endpoint_independent_nat": false, // null:keepOriginal, false:disablel, true:enable
+      "udp_timeout": "5m", // null:keepOriginal, "":keepOriginal, "5m":5m
+      "stack": "mixed" // null:keepOriginal, "":keepOriginal, "system", "gvisor", "mixed"
+    },
     "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "clash_api": {
       "dashboard_params_type": "", // null:keepOriginal, "":keepOriginal, "clash", "yacd"

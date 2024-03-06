@@ -211,6 +211,13 @@ verifySettings() {
 				// (.port | if type == "number" then empty else "port" end)
 				// (.set_system_proxy | if . == null or type == "boolean" then empty else "set_system_proxy" end)
 			else 1 end;
+		def tun_in:
+			if type == "object" then
+				(.enabled | if . == null or type == "boolean" then empty else "enabled" end)
+				// (.endpoint_independent_nat | if . == null or type == "boolean" then empty else "endpoint_independent_nat" end)
+				// (.udp_timeout | if . == null or type == "string" then empty else "udp_timeout" end)
+				// (.stack | if . == null or type == "string" then empty else "stack" end)
+			else 1 end;
 		def clash_api:
 			if type == "object" then
 				(.dashboard_params_type | if . == null or type == "string" then empty else "dashboard_params_type" end)
@@ -229,8 +236,8 @@ verifySettings() {
 				if . == null or type == "number" then empty else 1 end
 			elif $k == "mixed_in" then
 				if . == null then empty else mixed_in end
-			elif $k == "tun_mode" then
-				if . == null or type == "boolean" then empty else 1 end
+			elif $k == "tun_in" then
+				if . == null then empty else tun_in end
 			elif $k == "log_level" then
 				if . == null or type == "string" then empty else 1 end
 			elif $k == "clash_api" then
@@ -254,7 +261,7 @@ verifySettings() {
 			// (.sniff_override_destination | verify("sniff_override_destination"))
 			// (.dns_port | verify("dns_port"))
 			// (.mixed_in | verify("mixed_in"))
-			// (.tun_mode | verify("tun_mode"))
+			// (.tun_in | verify("tun_in"))
 			// (.log_level | verify("log_level"))
 			// (.clash_api | verify("clash_api"))
 			// (.mixin | verify("mixin"))
@@ -298,7 +305,7 @@ setSB() {
 		"sniff_override_destination",
 		"dns_port",
 		"mixed_in",
-		"tun_mode",
+		"tun_in",
 		"log_level",
 		"clash_api",
 		"mixin",
@@ -311,6 +318,10 @@ setSB() {
 	# mixed_in
 	sets='["enabled","port","set_system_proxy"]'
 	sets="$(_exportVar mixed_in "$sets" mixed_in_ )"
+	eval "$sets"
+	# tun_in
+	sets='["enabled","endpoint_independent_nat","udp_timeout","stack"]'
+	sets="$(_exportVar tun_in "$sets" tun_in_ )"
 	eval "$sets"
 	# clash_api
 	sets='["dashboard_params_type","controller_port","secret"]'
@@ -379,6 +390,32 @@ setSB() {
 					$(isEmpty "$sniff_override_destination" || echo ,\"sniff_override_destination\": $sniff_override_destination)
 					$(isEmpty "$mixed_in_set_system_proxy" || echo ,\"set_system_proxy\": $mixed_in_set_system_proxy)
 				})"
+		# tun_in_enabled
+		# tun_in_endpoint_independent_nat
+		# tun_in_udp_timeout
+		# tun_in_stack
+		# sniff_override_destination
+		isEmpty "$tun_in_enabled" ||
+			jsonSet inbounds '[.[] | select(.type == "tun" | not) ]'
+		if [ "$tun_in_enabled" = "true" ]; then
+			jsonSet inbounds \
+				"push({
+					\"type\": \"tun\",
+					\"tag\": \"shellbox-tun-in\",
+					\"interface_name\": \"singtun0\",
+					\"inet4_addres\": \"172.19.0.1/30\",
+					\"inet6_address\": \"fdfe:dcba:9876::1/126\",
+					\"mtu\": 9000,
+					\"gso\": $([ "$OS" = "linux" ] && echo true || echo false),
+					\"auto_route\": true,
+					\"strict_route\": false
+					$(isEmpty "$tun_in_endpoint_independent_nat" || echo ,\"endpoint_independent_nat\": $tun_in_endpoint_independent_nat)
+					$(isEmpty "$tun_in_udp_timeout" || echo ,\"udp_timeout\": \"$tun_in_udp_timeout\")
+					,\"stack\": \"$tun_in_stack\"
+					,\"sniff\": true
+					$(isEmpty "$sniff_override_destination" || echo ,\"sniff_override_destination\": $sniff_override_destination)
+				})"
+		fi
 
 		echo "$config" | jq > "$RUNICFG"
 	else

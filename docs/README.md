@@ -51,6 +51,7 @@
   ],
   "settings": {
     "default_interface": "", // null:keepOriginal, "":auto gen by shellbox, "en0":en0
+    "allow_lan": false, // null:keepOriginal, false:(0.0.0.0|::) -> ::1, true:(127.*.*.*|::1) -> ::
     "sniff_override_destination": false, // null:keepOriginal, false:disable, true:enable
     "dns_port": 2153, // null:keepOriginal, 2153:2153
     "mixed_port": 2188, // null:keepOriginal, 2153:2188
@@ -62,7 +63,6 @@
       "controller_port": 19988, // null:keepOriginal, 19988:19988
       "secret": "" // null:keepOriginal, "":auto gen by shellbox, "typepassword":typepassword
     },
-    "allow_lan": false, // null:keepOriginal, false:(0.0.0.0|::) -> ::1, true:(127.*.*.*|::1) -> ::
     "mixin": true, // If false, the above fields will not be applyed, the config will remain as is
     "service_mode": false,
     "start_at_boot": false,

@@ -215,6 +215,8 @@ verifySettings() {
 			# Optional
 			if $k == "default_interface" then
 				if . == null or type == "string" then empty else 1 end
+			elif $k == "allow_lan" then
+				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "sniff_override_destination" then
 				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "dns_port" then
@@ -229,8 +231,6 @@ verifySettings() {
 				if . == null or type == "string" then empty else 1 end
 			elif $k == "clash_api" then
 				if . == null then empty else clash_api end
-			elif $k == "allow_lan" then
-				if . == null or type == "boolean" then empty else 1 end
 			# Required
 			elif $k == "mixin" then
 				if type == "boolean" then empty else 1 end
@@ -244,6 +244,7 @@ verifySettings() {
 			| if . == 1 then "Key [\"\($k)\"] of the settings is invalid." else . end;
 		if type == "object" and length > 0 then
 			(.default_interface | verify("default_interface"))
+			// (.allow_lan | verify("allow_lan"))
 			// (.sniff_override_destination | verify("sniff_override_destination"))
 			// (.dns_port | verify("dns_port"))
 			// (.mixed_port | verify("mixed_port"))
@@ -251,7 +252,6 @@ verifySettings() {
 			// (.tun_mode | verify("tun_mode"))
 			// (.log_level | verify("log_level"))
 			// (.clash_api | verify("clash_api"))
-			// (.allow_lan | verify("allow_lan"))
 			// (.mixin | verify("mixin"))
 			// (.service_mode | verify("service_mode"))
 			// (.start_at_boot | verify("start_at_boot"))
@@ -289,6 +289,7 @@ setSB() {
 	# settings
 	lcoal sets='[
 		"default_interface",
+		"allow_lan",
 		"sniff_override_destination",
 		"dns_port",
 		"mixed_port",
@@ -296,7 +297,6 @@ setSB() {
 		"tun_mode",
 		"log_level",
 		"clash_api",
-		"allow_lan",
 		"mixin",
 		"service_mode",
 		"start_at_boot",

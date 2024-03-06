@@ -416,6 +416,8 @@ setSB() {
 					$(isEmpty "$sniff_override_destination" || echo ,\"sniff_override_destination\": $sniff_override_destination)
 				})"
 		fi
+		jsonSetjson config '.inbounds=$ARGS.positional[0]' "$inbounds"
+
 
 		echo "$config" | jq > "$RUNICFG"
 	else

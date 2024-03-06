@@ -279,8 +279,7 @@ setSB() {
 			'def export($keys; $prefix):
 				def loop($i):
 					if $i >= ($keys | length) then empty else
-						if $keys[$i] then "local \($prefix)\($keys[$i])=\u0027\(.[$keys[$i]])\u0027"
-						else "local \($prefix)\($keys[$i])=" end, loop($i+1)
+						"local \($prefix)\($keys[$i])=\u0027\(.[$keys[$i]])\u0027", loop($i+1)
 					end;
 				[loop(0)] | join(";");
 			export($ARGS.positional[0]; $ARGS.positional[1])' \
@@ -320,7 +319,7 @@ setSB() {
 			| .experimental.clash_api.external_ui=$ARGS.positional[1]' \
 			"${LOGSDIR//$WORKDIR\//}/$(date +"%F-%H%M").log" "${DASHDIR//$WORKDIR\//}"
 		# log_level
-		[ -z "$log_level" -o "$log_level" = "null" ] ||
+		isEmpty "$log_level" ||
 			jsonSet config '.log.level=$ARGS.positional[0]' "$log_level"
 
 		# inbounds
@@ -349,7 +348,7 @@ setSB() {
 			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(false)'
 		fi
 		# dns_port
-		[ -z "$dns_port" -o "$dns_port" = "null" ] ||
+		isEmpty "$dns_port" ||
 			jsonSet inbounds \
 				"push({
 					\"type\": \"direct\",
@@ -360,7 +359,7 @@ setSB() {
 		# mixed_port
 		# set_system_proxy
 		# sniff_override_destination
-		[ -z "$mixed_port" -o "$mixed_port" = "null" ] ||
+		isEmpty "$mixed_port" ||
 			jsonSet inbounds \
 				"push({
 					\"type\": \"mixed\",
@@ -368,8 +367,8 @@ setSB() {
 					\"listen\": \"$listenaddr\",
 					\"listen_port\": $mixed_port,
 					\"sniff\": true
-					${sniff_override_destination:+,\"sniff_override_destination\": $sniff_override_destination}
-					${set_system_proxy:+,\"set_system_proxy\": $set_system_proxy}
+					$(isEmpty "$sniff_override_destination" || echo ,\"sniff_override_destination\": $sniff_override_destination)
+					$(isEmpty "$set_system_proxy" || echo ,\"set_system_proxy\": $set_system_proxy)
 				})"
 
 		echo "$config" | jq > "$RUNICFG"

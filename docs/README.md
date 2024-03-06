@@ -51,14 +51,14 @@
   ],
   "settings": {
     "default_interface": "", // null:keepOriginal, "":auto gen by shellbox, "en0":en0
-    "sniff_override_destination": false, // null:disable, false:disable, true:enable
+    "sniff_override_destination": false, // null:keepOriginal, false:disable, true:enable
     "dns_port": 2153, // null:keepOriginal, 2153:2153
     "mixed_port": 2188, // null:keepOriginal, 2153:2188
     "set_system_proxy": false, // 127.0.0.1:$mixed_port; not work if $mixed_port is empty. null:disable, false:disable, true:enable
     "tun_mode": false, // null:keepOriginal, false:disableAll, true:overwriteAll by shellbox
     "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "clash_api": {
-      "dashboard_params_type": "", // null:keepOriginal, "":"yacd", "clash", "yacd"
+      "dashboard_params_type": "", // null:keepOriginal, "":keepOriginal, "clash", "yacd"
       "controller_port": 19988, // null:keepOriginal, 19988:19988
       "secret": "" // null:keepOriginal, "":auto gen by shellbox, "typepassword":typepassword
     },

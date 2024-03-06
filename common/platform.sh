@@ -188,6 +188,14 @@ windows_startup() {
 	esac
 }
 
+randomUUID() {
+	case "$OS" in
+		windows) powershell -c '[guid]::NewGuid('').ToString()';;
+		darwin) uuidgen | tr 'A-Z' 'a-z';;
+		linux) cat /proc/sys/kernel/random/uuid;;
+	esac
+}
+
 getDefaultIfname() {
 	# ref:
 	# https://unix.stackexchange.com/questions/14961/how-to-find-out-which-interface-am-i-using-for-connecting-to-the-internet

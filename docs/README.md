@@ -68,7 +68,7 @@
     },
     "clash_api": {
       "dashboard_params_type": "", // null:keepOriginal, "":keepOriginal, "clash", "yacd"
-      "controller_port": 19988, // null:keepOriginal, 19988:19988
+      "external_controller": "[::1]:19988", // null:keepOriginal, "":keepOriginal, "[::1]:19988":[::1]:19988
       "secret": "" // null:keepOriginal, "":auto gen by shellbox, "typepassword":typepassword
     },
     "mixin": true, // If false, the above fields will not be applyed, the config will remain as is

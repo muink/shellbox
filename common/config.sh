@@ -207,9 +207,9 @@ verifySettings() {
 	local JQFUNC_settings='def settings:
 		def clash_api:
 			if type == "object" then
-				(.dashboard_params_type | if . == null or type == "string" then empty else 1 end)
-				// (.controller_port | if . == null or type == "number" then empty else 1 end)
-				// (.secret | if . == null or type == "string" then empty else 1 end)
+				(.dashboard_params_type | if . == null or type == "string" then empty else "dashboard_params_type" end)
+				// (.controller_port | if . == null or type == "number" then empty else "controller_port" end)
+				// (.secret | if . == null or type == "string" then empty else "secret" end)
 			else 1 end;
 		def verify($k):
 			# Optional
@@ -241,7 +241,9 @@ verifySettings() {
 			elif $k == "config" then
 				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
 			else empty end
-			| if . == 1 then "Key [\"\($k)\"] of the settings is invalid." else . end;
+			| if . == 1 then "Key [\"\($k)\"] of the settings is invalid." else
+				"Key [\"\($k).\(.)\"] of the settings is invalid."
+			end;
 		if type == "object" and length > 0 then
 			(.default_interface | verify("default_interface"))
 			// (.allow_lan | verify("allow_lan"))

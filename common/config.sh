@@ -367,7 +367,8 @@ setSB() {
 			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(false)'
 		fi
 		# dns_port
-		isEmpty "$dns_port" ||
+		isEmpty "$dns_port" || {
+			# inbounds
 			jsonSet inbounds \
 				"push({
 					\"type\": \"direct\",
@@ -375,6 +376,22 @@ setSB() {
 					\"listen\": \"$listenaddr\",
 					\"listen_port\": $dns_port
 				})"
+			# outbounds and route.rules
+			local dns_out="$(jsonSelect config '.outbounds[] | select(.type == "dns") | .tag')"
+			if [ -z "$dns_out" ]; then
+				jsonSet config \
+					'(.outbounds // []) as $outbounds
+					| .outbounds=($outbounds | insert(0; {"type":"dns","tag":$ARGS.positional[0]}) )
+					| (.route.rules // []) as $routerules
+					| .route.rules=($routerules | insert(0; {"inbound":"shellbox-dns-in","outbound":$ARGS.positional[0]}) )' \
+					"dns-out"
+			else
+				jsonSet config \
+					'(.route.rules // []) as $routerules
+					| .route.rules=($routerules | insert(0; {"inbound":"shellbox-dns-in","outbound":$ARGS.positional[0]}) )' \
+					"$dns_out"
+			fi
+		}
 		# mixed_in_enabled
 		# mixed_in_port
 		# mixed_in_set_system_proxy

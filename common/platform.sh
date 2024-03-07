@@ -215,6 +215,18 @@ windows_mkdash() {
 	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" > "${1:-.}/razord.url"
 }
 
+# func <target>
+darwin_mkrun() {
+	[ -n "$1" ] || return 1
+	local cfg="${RUNICFG//$WORKDIR\//}"
+
+	cat <<- EOF > "$1"
+	#!/bin/bash
+	"$BINADIR/$SINGBOX" run -D "$WORKDIR" -c "$cfg"
+	EOF
+	chmod +x "$1"
+}
+
 randomUUID() {
 	case "$OS" in
 		windows) powershell -c '[guid]::NewGuid('').ToString()';;

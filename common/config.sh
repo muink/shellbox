@@ -220,8 +220,7 @@ verifySettings() {
 			else 1 end;
 		def clash_api:
 			if type == "object" then
-				(.dashboard_params_type | if . == null or type == "string" then empty else "dashboard_params_type" end)
-				// (.external_controller | if . == null or type == "string" then empty else "external_controller" end)
+				(.external_controller | if . == null or type == "string" then empty else "external_controller" end)
 				// (.secret | if . == null or type == "string" then empty else "secret" end)
 			else 1 end;
 		def verify($k):
@@ -324,7 +323,7 @@ setSB() {
 	sets="$(_exportVar tun_in "$sets" tun_in_ )"
 	eval "$sets"
 	# clash_api
-	sets='["dashboard_params_type","external_controller","secret"]'
+	sets='["external_controller","secret"]'
 	sets="$(_exportVar clash_api "$sets" clash_api_ )"
 	eval "$sets"
 

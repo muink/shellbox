@@ -67,7 +67,6 @@
       "stack": "mixed" // null:keepOriginal, "":keepOriginal, "system", "gvisor", "mixed"
     },
     "clash_api": {
-      "dashboard_params_type": "", // null:keepOriginal, "":keepOriginal, "clash", "yacd"
       "external_controller": "[::1]:19988", // null:keepOriginal, "":keepOriginal, "[::1]:19988":[::1]:19988
       "secret": "" // null:keepOriginal, "":auto gen by shellbox, "typepassword":typepassword
     },

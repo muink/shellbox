@@ -463,14 +463,14 @@ setSB() {
 	# platform
 	case "$OS" in
 		windows)
+			windows_mkrun "$(getWindowsPath)\\run.lnk"
+
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode
-				if [ "$service_mode" = "true" ]; then
-					windows_service install
-				else
-					windows_startup install
-				fi
+				[ "$service_mode" = "true" ] \
+					&& windows_service install \
+					|| windows_startup install
 			else
 				windows_service uninstall
 				windows_startup uninstall

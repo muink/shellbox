@@ -163,7 +163,7 @@ windows_service() {
 }
 
 # func <target>
-windows_mklnk() {
+windows_mkrun() {
 	[ -n "$1" ] || return 1
 	local cfg="${RUNICFG//$WORKDIR\//}"
 
@@ -180,7 +180,7 @@ windows_startup() {
 
 	case "$1" in
 		install)
-			windows_mklnk "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\shellbox.lnk"
+			windows_mkrun "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\shellbox.lnk"
 		;;
 		uninstall)
 			rm -f ~/AppData/Roaming/Microsoft/Windows/Start\ Menu/Programs/Startup/shellbox.lnk 2>/dev/null

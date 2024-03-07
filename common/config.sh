@@ -445,6 +445,13 @@ setSB() {
 			*) jsonSet config '.experimental.clash_api.secret=$ARGS.positional[0]' "$clash_api_secret";;
 		esac
 
+		# default_interface
+		case "$default_interface" in
+			"") jsonSet config '.route.default_interface=$ARGS.positional[0]' "$(getDefaultIfname)";;
+			null) ;;
+			*) jsonSet config '.route.default_interface=$ARGS.positional[0]' "$default_interface";;
+		esac
+
 		echo "$config" | jq > "$RUNICFG"
 	else
 		cp -f "$CONFDIR/$config.json" "$RUNICFG"

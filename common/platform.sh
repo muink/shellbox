@@ -171,7 +171,7 @@ windows_mkrun() {
 		"$(getWindowsPath "$BINADIR")\\$SINGBOX" \
 		"run -D '$(getWindowsPath "$WORKDIR")' -c '${cfg////\\}'" \
 		"$1" \
-		"$(getWindowsPath)\\docs\\assets\\logo_16_24_32_64_96_256.ico"
+		"$(getWindowsPath "$MAINDIR")\\docs\\assets\\logo_16_24_32_64_96_256.ico"
 }
 
 # func <install|uninstall>

@@ -464,6 +464,7 @@ setSB() {
 	case "$OS" in
 		windows)
 			windows_mkrun "$(getWindowsPath)\\run.lnk"
+			windows_mkdash "."
 
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then

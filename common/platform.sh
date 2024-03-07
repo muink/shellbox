@@ -188,6 +188,33 @@ windows_startup() {
 	esac
 }
 
+# func <targetdir>
+windows_mkdash() {
+	[ -n "$1" ] || return 1
+	local clash_api="$(jq -rc '.experimental.clash_api//""' "$RUNICFG")"
+	local host="$(jsonSelect clash_api '.external_controller')"
+	[ -n "$host" ] || return 0
+
+	local hostname="$(echo "${host%:*}" | tr -d '[]')"
+	if echo "$hostname" | grep -qE "^::1?$"; then hostname='127.0.0.1'; fi
+	local port="${host##*:}"
+	local secret="$(jsonSelect clash_api '.secret')"
+
+	_mkurl() {
+		cat <<- EOF
+		[{000214A0-0000-0000-C000-000000000046}]
+		Prop3=19,11
+		[InternetShortcut]
+		IDList=
+		URL=$1
+		EOF
+	}
+
+	_mkurl "http://${hostname}:${port}/ui/" > "${1:-.}/dashboard.url"
+	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" > "${1:-.}/yacd.url"
+	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" > "${1:-.}/razord.url"
+}
+
 randomUUID() {
 	case "$OS" in
 		windows) powershell -c '[guid]::NewGuid('').ToString()';;

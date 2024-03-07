@@ -481,16 +481,16 @@ setSB() {
 			darwin_mkrun "run.command"
 			windows_mkdash "."
 
-			# service_mode
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
+				# service_mode
 			else
 			fi
 		;;
 		linux)
-			# service_mode
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
+				# service_mode
 			else
 			fi
 		;;

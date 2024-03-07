@@ -299,7 +299,7 @@ setSB() {
 	}
 
 	# settings
-	lcoal sets='[
+	local sets='[
 		"default_interface",
 		"allow_lan",
 		"sniff_override_destination",

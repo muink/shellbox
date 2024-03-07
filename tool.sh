@@ -59,7 +59,7 @@ getSysinfo || { pause; exit; }
 [ "$OS" = "darwin" ] &&
 	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$PATH"
 depCheck || { pause; exit; }
-export SINGBOX=shellbox_core$( [ "$OS" = "windows" ] && echo .exe)
+export SINGBOX=$( [ "$OS" = "darwin" ] && echo darwin_)shellbox_core$( [ "$OS" = "windows" ] && echo .exe)
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures
 [ "$OS" = "darwin" ] && export NPROC=$(nproc) ||
 	export NPROC=$[ $(cat /proc/cpuinfo | grep "core id" | tr -dc '[0-9]\n' | sort -nu | tail -n1) +1]

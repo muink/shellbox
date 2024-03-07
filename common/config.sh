@@ -456,6 +456,10 @@ setSB() {
 	else
 		cp -f "$CONFDIR/$config.json" "$RUNICFG"
 	fi
+	$SINGBOX check -D "$WORKDIR" -c "$RUNICFG"
+	[ $? = 0 ] || { logs err "setSB: runtime config check is failed.\n"; return 1; }
+
+	return 0
 
 	# platform
 	case "$OS" in

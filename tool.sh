@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-VERSION=0.5
+VERSION=0.6
 LOGO="\
 =================================================
           ___ _        _ _ ___              　

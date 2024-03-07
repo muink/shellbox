@@ -56,7 +56,7 @@
     "log_level": "info", // null:keepOriginal, "":keepOriginal, "trace", "debug", "info", "warn", "error", "fatal", "panic"
     "dns_port": 2153, // null:keepOriginal, 2153: add a dns_in on port 2153
     "mixed_in": {
-      "enabled": true, // null:keepOriginal, false:disable, true:enable
+      "enabled": true, // null:keepOriginal, false:keepOriginal, true: add a mixed_in on port 2188
       "port": 2188, // Required
       "set_system_proxy": false // null:keepOriginal, false:disable, true:enable
     },

@@ -484,7 +484,10 @@ setSB() {
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode
+				[ "$service_mode" = "true" ] \
+					|| darwin_startup install "run.command"
 			else
+				darwin_startup uninstall "run.command"
 			fi
 		;;
 		linux)

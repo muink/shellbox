@@ -227,6 +227,27 @@ darwin_mkrun() {
 	chmod +x "$1"
 }
 
+# func <install|uninstall> <target>
+darwin_startup() {
+	# ref: 
+	# https://apple.stackexchange.com/questions/310495/can-login-items-be-added-via-the-command-line-in-high-sierra
+	# https://apple.stackexchange.com/questions/418423/how-to-delete-hidden-login-iterms-from-backgrounditems-btm-cml-way-is-prefered
+	#osascript -e 'tell application "System Events" to get the name of every login item'
+	#osascript -e 'tell application "System Events" to delete login item "name"'
+	[ -n "$1" -a -n "$2" ] || return 1
+	local dir="$(cd $(dirname "$2"); pwd | sed 's|/*$|/|')"
+	local file="$(basename "$2")"
+
+	case "$1" in
+		install)
+			osascript -e 'tell application "System Events" to make login item at end with properties {path:"'"$dir$file"'", hidden:false}'
+		;;
+		uninstall)
+			osascript -e 'tell application "System Events" to delete login item "'"$file"'"'
+		;;
+	esac
+}
+
 randomUUID() {
 	case "$OS" in
 		windows) powershell -c '[guid]::NewGuid('').ToString()';;

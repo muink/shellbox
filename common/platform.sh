@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Copyright (C) 2024 Anya Lin
 #
 # This is free software, licensed under the GNU General Public License v3.
@@ -217,6 +217,76 @@ windows_mkdash() {
 	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" > "${1:-.}/razord.url"
 }
 
+# func <install|uninstall|start|stop|restart|enable|disable|check>
+darwin_daemon() {
+	[ -n "$1" ] || return 1
+	local ServiceName='shellbox.service'
+	local cfg="${RUNICFG//$WORKDIR\//}"
+	local plist="/Library/LaunchDaemons/$ServiceName.plist"
+
+	local rcode=$(sudo launchctl list | grep -q "$ServiceName" || echo $?)
+	_start() { sudo launchctl   load "$plist"; }
+	_stop()  { sudo launchctl unload "$plist"; }
+	_enable()  { sudo launchctl   load -w "$plist"; }
+	_disable() { sudo launchctl unload -w "$plist"; }
+	_checkProcess() { pgrep -f "$SINGBOX" >/dev/null && logs yeah "darwin_daemon: Service is runing.\n"; }
+	_killProcess()  { sudo killall "$SINGBOX" 2>/dev/null; }
+
+	case "$1" in
+		install)
+			_killProcess
+			cat <<- EOF > "/tmp/$ServiceName"
+				<?xml version="1.0" encoding="UTF-8"?>
+				<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+				<plist version="1.0">
+				  <dict>
+				    <key>Label</key>
+				    <string>$ServiceName</string>
+				    <key>ProgramArguments</key>
+				    <array>
+				      <string>$BINADIR/$SINGBOX</string>
+				      <string>run</string>
+				      <string>-D</string>
+				      <string>$WORKDIR</string>
+				      <string>-c</string>
+				      <string>${cfg////\\}</string>
+				    </array>
+				    <key>RunAtLoad</key>
+				    <true/>
+				    <key>KeepAlive</key>
+				    <dict>
+				      <key>SuccessfulExit</key>
+				      <false/>
+				    </dict>
+				  </dict>
+				</plist>
+			EOF
+			sudo cp -f "/tmp/$ServiceName" "$plist"
+			sudo chmod 644 "$plist"
+			sudo launchctl load -w "$plist"
+			sleep 3
+			_checkProcess
+		;;
+		uninstall)
+			_killProcess
+			[ -z "$rcode" ] && {
+				sudo launchctl unload "$plist"
+				sudo rm -f "$plist"
+			}
+		;;
+		start) [ -f "$plist" ] || { logs err "darwin_daemon: Service not loaded.\n"; return 1; } && _start;;
+		stop) [ -z "$rcode" ] && _stop;;
+		restart)
+			_stop; sleep 3
+			_killProcess
+			_start
+		;;
+		enable) [ -f "$plist" ] && _enable;;
+		disable) [ -z "$rcode" ] && _disable;;
+		check) [ -z "$rcode" ] && _checkProcess;;
+	esac
+}
+
 # func <target>
 darwin_mkrun() {
 	[ -n "$1" ] || return 1
@@ -231,7 +301,7 @@ darwin_mkrun() {
 
 # func <install|uninstall> <target>
 darwin_startup() {
-	# ref: 
+	# ref:
 	# https://apple.stackexchange.com/questions/310495/can-login-items-be-added-via-the-command-line-in-high-sierra
 	# https://apple.stackexchange.com/questions/418423/how-to-delete-hidden-login-iterms-from-backgrounditems-btm-cml-way-is-prefered
 	#osascript -e 'tell application "System Events" to get the name of every login item'

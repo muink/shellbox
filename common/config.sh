@@ -342,7 +342,7 @@ setSB() {
 
 		# inbounds
 		local inbounds="$(jsonSelect config '.inbounds' 2>/dev/null)"
-		[ -n "$inbounds" ] || inbounds='{}'
+		[ -n "$inbounds" ] || inbounds='[]'
 		# allow_lan
 		local JQFUNC_allow_lan='def allow_lan($s):
 			def loop($i):

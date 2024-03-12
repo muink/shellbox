@@ -315,7 +315,7 @@ darwin_startup() {
 			osascript -e 'tell application "System Events" to make login item at end with properties {path:"'"$dir$file"'", hidden:false}'
 		;;
 		uninstall)
-			osascript -e 'tell application "System Events" to delete login item "'"$file"'"'
+			osascript -e 'tell application "System Events" to delete login item "'"$file"'"' 2>/dev/null
 		;;
 	esac
 }

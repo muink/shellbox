@@ -59,19 +59,19 @@
       "port": 2188, // Required
       "set_system_proxy": false // null:keepOriginal, false:disable, true:enable
     },
-    "tun_in": {
+    "tun_in": { // Required install as service when using tun
       "enabled": false, // null:keepOriginal, false:disableAll, true:overwriteAll by shellbox
       "endpoint_independent_nat": false, // null:keepOriginal, false:disablel, true:enable
       "udp_timeout": "5m", // null:keepOriginal, "":keepOriginal, "5m":5m
       "stack": "mixed" // null:keepOriginal, "":keepOriginal, "system", "gvisor", "mixed"
     },
     "clash_api": {
-      "external_controller": "[::1]:19988", // null:keepOriginal, "":keepOriginal, "[::1]:19988":[::1]:19988
+      "external_controller": "127.0.0.1:19988", // null:keepOriginal, "":keepOriginal, "127.0.0.1:19988":127.0.0.1:19988
       "secret": "" // null:keepOriginal, "":auto gen by shellbox, "typepassword":typepassword
     },
-    "mixin": true, // If false, the above fields will not be applyed, the config will remain as is
-    "service_mode": false,
-    "start_at_boot": false,
+    "mixin": true, // If false, the above fields will not be applyed, the runtime config will remain as is
+    "service_mode": false, // If you shellbox on a removable storage device, the program may not start
+    "start_at_boot": false, // If you shellbox on a removable storage device, the program may not start
     "config": "ruleset_tun"
   }
 }

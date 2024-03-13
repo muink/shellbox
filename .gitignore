@@ -1,6 +1,7 @@
 bin/
 resources/
 settings.json
-*.url
-run.command
 desktop.ini
+*.url
+*.command
+*.desktop

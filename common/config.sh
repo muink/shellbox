@@ -450,7 +450,7 @@ setSB() {
 	# platform
 	case "$OS" in
 		windows)
-			windows_mkrun "$(getWindowsPath)\\run.lnk"
+			windows_mkrun "$(getWindowsPath)\\shellbox.lnk"
 			windows_mkdash "."
 
 			# start_at_boot
@@ -465,7 +465,7 @@ setSB() {
 			fi
 		;;
 		darwin)
-			darwin_mkrun "run.command"
+			darwin_mkrun "shellbox.command"
 			windows_mkdash "."
 
 			# start_at_boot
@@ -473,10 +473,10 @@ setSB() {
 				# service_mode
 				[ "$service_mode" = "true" ] \
 					&& darwin_daemon install \
-					|| darwin_startup install "run.command"
+					|| darwin_startup install "shellbox.command"
 			else
 				darwin_daemon uninstall
-				darwin_startup uninstall "run.command"
+				darwin_startup uninstall "shellbox.command"
 			fi
 		;;
 		linux)

@@ -227,8 +227,6 @@ verifySettings() {
 			# Optional
 			if $k == "default_interface" then
 				if . == null or type == "string" then empty else 1 end
-			elif $k == "allow_lan" then
-				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "sniff_override_destination" then
 				if . == null or type == "boolean" then empty else 1 end
 			elif $k == "log_level" then
@@ -256,7 +254,6 @@ verifySettings() {
 			end;
 		if type == "object" and length > 0 then
 			(.default_interface | verify("default_interface"))
-			// (.allow_lan | verify("allow_lan"))
 			// (.sniff_override_destination | verify("sniff_override_destination"))
 			// (.log_level | verify("log_level"))
 			// (.dns_port | verify("dns_port"))
@@ -300,7 +297,6 @@ setSB() {
 	# settings
 	local sets='[
 		"default_interface",
-		"allow_lan",
 		"sniff_override_destination",
 		"log_level",
 		"dns_port",
@@ -343,28 +339,19 @@ setSB() {
 		# inbounds
 		local inbounds="$(jsonSelect config '.inbounds' 2>/dev/null)"
 		[ -n "$inbounds" ] || inbounds='[]'
-		# allow_lan
-		local JQFUNC_allow_lan='def allow_lan($s):
+		# Allow all LAN, IPv4 and IPv6
+		local JQFUNC_listenall='def listenall:
 			def loop($i):
 				if $i >= length then . else
 					if (.[$i] | type == "object" and length > 0) then
-						if $s then
-							if .[$i].listen and (.[$i].listen | test("^(127\\..*|::1)$")) then .[$i].listen="::" else . end
-						else
-							if .[$i].listen and (.[$i].listen | test("^(0\\..*|::)$")) then .[$i].listen="::1" else . end
-						end
+						if .[$i].listen and (.[$i].listen | test("^(127(\\.[0-9]+){3}|::1)$")) then .[$i].listen="::" else . end
 					else . end
 					| loop($i+1)
 				end;
-			if type == "array" and ($s | type == "boolean") then loop(0)
+			if type == "array" then loop(0)
 			else . end;'
-		if   [ "$allow_lan" = "true"  ]; then
-			local listenaddr='::'
-			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(true)'
-		elif [ "$allow_lan" = "false" ]; then
-			local listenaddr='::1'
-			jsonSet inbounds "$JQFUNC_allow_lan"'allow_lan(false)'
-		fi
+		local listenaddr='::'
+		jsonSet inbounds "$JQFUNC_listenall"'listenall'
 		# dns_port
 		isEmpty "$dns_port" || {
 			# inbounds

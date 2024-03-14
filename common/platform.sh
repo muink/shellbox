@@ -274,7 +274,7 @@ darwin_daemon() {
 				sudo rm -f "$plist"
 			}
 		;;
-		start) [ -f "$plist" ] || { logs err "darwin_daemon: Service not loaded.\n"; return 1; } && _start;;
+		start) [ -f "$plist" ] || { logs err "darwin_daemon: Service not installed.\n"; return 1; } && _start;;
 		stop) [ -z "$rcode" ] && _stop;;
 		restart)
 			_stop; sleep 3

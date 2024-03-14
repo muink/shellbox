@@ -456,9 +456,13 @@ setSB() {
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode
-				[ "$service_mode" = "true" ] \
-					&& windows_service install \
-					|| windows_startup install
+				if [ "$service_mode" = "true" ]; then
+					windows_service install
+					windows_startup uninstall
+				else
+					windows_startup install
+					windows_service uninstall
+				fi
 			else
 				windows_service uninstall
 				windows_startup uninstall
@@ -471,9 +475,13 @@ setSB() {
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode
-				[ "$service_mode" = "true" ] \
-					&& darwin_daemon install \
-					|| darwin_startup install "shellbox.command"
+				if [ "$service_mode" = "true" ]; then
+					darwin_daemon install
+					darwin_startup uninstall "shellbox.command"
+				else
+					darwin_startup install "shellbox.command"
+					darwin_daemon uninstall
+				fi
 			else
 				darwin_daemon uninstall
 				darwin_startup uninstall "shellbox.command"

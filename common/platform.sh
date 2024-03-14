@@ -320,6 +320,52 @@ darwin_startup() {
 	esac
 }
 
+# func <target>
+linux_mkrun() {
+	[ -n "$1" ] || return 1
+	local cfg="${RUNICFG//$WORKDIR\//}"
+
+	cat <<- EOF > "$1"
+	[Desktop Entry]
+	Encoding=UTF-8
+	Type=Application
+	Name=ShellBox
+	Comment=A lightweight sing-box client
+	Exec="$BINADIR/$SINGBOX" run -D "$WORKDIR" -c "$cfg"
+	Icon="$MAINDIR/docs/assets/logo.png" 
+	Terminal=true
+	Categories=Development;
+	EOF
+}
+
+# func <targetdir>
+linux_mkdash() {
+	[ -n "$1" ] || return 1
+	local clash_api="$(jq -rc '.experimental.clash_api//""' "$RUNICFG")"
+	local host="$(jsonSelect clash_api '.external_controller')"
+	[ -n "$host" ] || return 0
+
+	local hostname="$(echo "${host%:*}" | tr -d '[]')"
+	if echo "$hostname" | grep -qE "^::1?$"; then hostname='127.0.0.1'; fi
+	local port="${host##*:}"
+	local secret="$(jsonSelect clash_api '.secret')"
+
+	_mkurl() {
+		cat <<- EOF
+		[Desktop Entry]
+		Encoding=UTF-8
+		Type=Link
+		Name=${2^}
+		Icon=text-html
+		URL=$1
+		EOF
+	}
+
+	_mkurl "http://${hostname}:${port}/ui/" dashboard > "${1:-.}/dashboard.desktop"
+	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" yacd > "${1:-.}/yacd.desktop"
+	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" razord > "${1:-.}/razord.desktop"
+}
+
 randomUUID() {
 	case "$OS" in
 		windows) powershell -c '[guid]::NewGuid('').ToString()';;

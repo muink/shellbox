@@ -488,6 +488,9 @@ setSB() {
 			fi
 		;;
 		linux)
+			linux_mkrun "shellbox.desktop"
+			linux_mkdash "."
+
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode

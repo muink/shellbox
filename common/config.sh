@@ -246,6 +246,8 @@ verifySettings() {
 				if type == "boolean" then empty else 1 end
 			elif $k == "start_at_boot" then
 				if type == "boolean" then empty else 1 end
+			elif $k == "shortcut" then
+				if type == "boolean" then empty else 1 end
 			elif $k == "config" then
 				if type == "string" and test("^[[:word:]]+$") then empty else 1 end
 			else empty end
@@ -263,6 +265,7 @@ verifySettings() {
 			// (.mixin | verify("mixin"))
 			// (.service_mode | verify("service_mode"))
 			// (.start_at_boot | verify("start_at_boot"))
+			// (.shortcut | verify("shortcut"))
 			// (.config | verify("config"))
 		else "No settings exist." end;'
 
@@ -306,6 +309,7 @@ setSB() {
 		"mixin",
 		"service_mode",
 		"start_at_boot",
+		"shortcut",
 		"config"
 	]'
 	sets="$(_exportVar settings "$sets" )"
@@ -450,8 +454,11 @@ setSB() {
 	# platform
 	case "$OS" in
 		windows)
-			windows_mkrun "$(getWindowsPath)\\shellbox.lnk"
-			windows_mkdash "."
+			# shortcut
+			if [ "$shortcut" = "true" ]; then
+				windows_mkrun "$(getWindowsPath)\\shellbox.lnk"
+				windows_mkdash "."
+			fi
 
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
@@ -469,8 +476,11 @@ setSB() {
 			fi
 		;;
 		darwin)
-			darwin_mkrun "shellbox.command"
-			windows_mkdash "."
+			# shortcut
+			if [ "$shortcut" = "true" ]; then
+				darwin_mkrun "shellbox.command"
+				windows_mkdash "."
+			fi
 
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then
@@ -488,8 +498,11 @@ setSB() {
 			fi
 		;;
 		linux)
-			linux_mkrun "shellbox.desktop"
-			linux_mkdash "."
+			# shortcut
+			if [ "$shortcut" = "true" ]; then
+				linux_mkrun "shellbox.desktop"
+				linux_mkdash "."
+			fi
 
 			# start_at_boot
 			if [ "$start_at_boot" = "true" ]; then

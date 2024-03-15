@@ -72,6 +72,7 @@
     "mixin": true, // If false, the above fields will not be applyed, the config will remain as is
     "service_mode": false,
     "start_at_boot": false,
+    "shortcut": false,
     "config": "ruleset_tun"
   }
 }

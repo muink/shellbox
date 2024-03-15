@@ -458,7 +458,7 @@ setSB() {
 		windows)
 			# shortcut
 			if [ "$shortcut" = "true" ]; then
-				windows_mkrun "$(getWindowsPath)\\shellbox.lnk"
+				windows_mkrun "shellbox.bat"
 				windows_mkdash "."
 			fi
 

@@ -169,11 +169,11 @@ windows_mkrun() {
 	[ -n "$1" ] || return 1
 	local cfg="${RUNICFG//$WORKDIR\//}"
 
-	start "" "$(getWindowsPath "$CMDSDIR")\\mklnk.bat" \
-		"$(getWindowsPath "$BINADIR")\\$SINGBOX" \
-		"run -D '$(getWindowsPath "$WORKDIR")' -c '${cfg////\\}'" \
-		"$1" \
-		"$(getWindowsPath "$MAINDIR")\\docs\\assets\\logo_16_24_32_64_96_256.ico"
+	cat <<- EOF > "$1"
+	@chcp 65001 >nul
+	@echo off
+	"$(getWindowsPath "$BINADIR")\\$SINGBOX" run -D "$(getWindowsPath "$WORKDIR")" -c "${cfg////\\}"
+	EOF
 }
 
 # func <install|uninstall>
@@ -182,10 +182,10 @@ windows_startup() {
 
 	case "$1" in
 		install)
-			windows_mkrun "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\shellbox.lnk"
+			windows_mkrun ~/AppData/Roaming/Microsoft/Windows/Start\ Menu/Programs/Startup/shellbox.bat
 		;;
 		uninstall)
-			rm -f ~/AppData/Roaming/Microsoft/Windows/Start\ Menu/Programs/Startup/shellbox.lnk 2>/dev/null
+			rm -f ~/AppData/Roaming/Microsoft/Windows/Start\ Menu/Programs/Startup/shellbox.bat 2>/dev/null
 		;;
 	esac
 }
@@ -332,7 +332,7 @@ linux_mkrun() {
 	Name=ShellBox
 	Comment=A lightweight sing-box client
 	Exec="$BINADIR/$SINGBOX" run -D "$WORKDIR" -c "$cfg"
-	Icon="$MAINDIR/docs/assets/logo.png" 
+	Icon="$MAINDIR/docs/assets/logo.png"
 	Terminal=true
 	Categories=Development;
 	EOF

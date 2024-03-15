@@ -34,7 +34,7 @@ export DASHDIR="$WORKDIR/ui"
 export RUNICFG="$WORKDIR/client.json"
 
 
-export PATH="$BINADIR:$PATH"
+export PATH="$BINADIR:$BINADIR/gsudo:$PATH"
 . "$COMMDIR/common.sh"
 . "$COMMDIR/config.sh"
 . "$COMMDIR/github.sh"

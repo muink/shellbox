@@ -113,6 +113,19 @@ depCheck() {
 		;;
 	esac
 	[ "$errcount" -le 0 ] || return 1
+
+	if [ "$OS" = "windows" ]; then
+		if ! command -v gsudo >/dev/null; then
+			downloadTo "https://github.com/gerardog/gsudo/releases/latest/download/gsudo.portable.zip" "/tmp/gsudo.portable.zip" \
+				&& unzip -qo "/tmp/gsudo.portable.zip" x64/* -d "$BINADIR/" \
+				&& mv "$BINADIR/x64" "$BINADIR/gsudo" >/dev/null
+			command -v gsudo >/dev/null && {
+				local tmp='gsudo() { WSLENV=WSL_DISTRO_NAME:USER:$WSLENV MSYS_NO_PATHCONV=1 gsudo.exe "$@"; }'
+				touch ~/.bashrc
+				grep -q "$tmp" ~/.bashrc || echo "$tmp" >> ~/.bashrc
+			} || err "Please install \"https://gerardog.github.io/gsudo/\"\n"
+		fi
+	fi
 }
 
 # func [unix_path]
@@ -128,12 +141,12 @@ windows_service() {
 	local ServiceName=shboxsvc
 	local cfg="${RUNICFG//$WORKDIR\//}"
 
-	local rcode=$(sc query $ServiceName >/dev/null || echo $?)
-	_start() { sc query $ServiceName | grep -q "RUNNING" || sc start $ServiceName; }
-	_stop()  { sc query $ServiceName | grep -q "STOPPED" || sc stop $ServiceName; }
-	_enable()  { sc qc $ServiceName | grep -q "AUTO_START" || sc config $ServiceName start= auto; }
-	_disable() { sc qc $ServiceName | grep -q "DEMAND_START" || sc config $ServiceName start= demand; }
-	_delete() { [ -z "$rcode" ] && _stop && sc delete $ServiceName; }
+	local rcode=$(gsudo sc query $ServiceName >/dev/null || echo $?)
+	_start() { gsudo sc query $ServiceName | grep -q "RUNNING" || gsudo sc start $ServiceName; }
+	_stop()  { gsudo sc query $ServiceName | grep -q "STOPPED" || gsudo sc stop $ServiceName; }
+	_enable()  { gsudo sc qc $ServiceName | grep -q "AUTO_START" || gsudo sc config $ServiceName start= auto; }
+	_disable() { gsudo sc qc $ServiceName | grep -q "DEMAND_START" || gsudo sc config $ServiceName start= demand; }
+	_delete() { [ -z "$rcode" ] && _stop && gsudo sc delete $ServiceName; }
 	_checkProcess() { tasklist | grep -qi "$SINGBOX" && logs yeah "windows_service: Service is runing.\n"; }
 	_killProcess()  { tasklist | grep -qi "$SINGBOX" && taskkill /F /IM "$SINGBOX" >/dev/null; }
 
@@ -141,10 +154,10 @@ windows_service() {
 		install)
 			_delete; sleep 3
 			_killProcess
-			sc create $ServiceName binPath= "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${cfg////\\}\"" DisplayName= "ShellBox Service" start= auto
-			sc description $ServiceName "ShellBox, a lightweight sing-box client base on shell/bash"
-			sc failure $ServiceName reset= 0 actions= restart/5000/restart/10000//
-			sc start $ServiceName
+			gsudo sc create $ServiceName binPath= "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${cfg////\\}\"" DisplayName= "ShellBox Service" start= auto
+			gsudo sc description $ServiceName "ShellBox, a lightweight sing-box client base on shell/bash"
+			gsudo sc failure $ServiceName reset= 0 actions= restart/5000/restart/10000//
+			gsudo sc start $ServiceName
 			_checkProcess
 		;;
 		uninstall)

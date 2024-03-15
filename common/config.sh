@@ -405,8 +405,8 @@ setSB() {
 				"push({
 					\"type\": \"tun\",
 					\"tag\": \"shellbox-tun-in\",
-					\"interface_name\": \"singtun0\",
-					\"inet4_addres\": \"172.19.0.1/30\",
+					\"interface_name\": \"\",
+					\"inet4_address\": \"172.19.0.1/30\",
 					\"inet6_address\": \"fdfe:dcba:9876::1/126\",
 					\"mtu\": 9000,
 					\"gso\": $([ "$OS" = "linux" ] && echo true || echo false),

@@ -97,7 +97,7 @@ updateProvider() {
 		UA="$ua" FILTER="$filter"
 		parse_provider node_result "$url" || continue
 
-		echo -n "$node_result" > "$SUBSDIR/$tag.json"
+		echo "$node_result" > "$SUBSDIR/$tag.json"
 		let count++
 	done
 	time=$[ $(date -u +%s%3N) - $time ]
@@ -190,7 +190,8 @@ buildConfig() {
 		outbounds="$(jsonSelect cfg_result '.outbounds')"
 
 		build_outbound outbounds "$outbounds" "$providers" || continue
-		jsonSetjson cfg_result '.outbounds=$ARGS.positional[0]' "${outbounds:-[]}"
+		cfg_result="[$cfg_result,${outbounds:-[]}]"
+		jsonSet cfg_result '.[0].outbounds=.[1] | .[0]'
 
 		echo "$cfg_result" | jq > "$CONFDIR/$output.json"
 		let count++
@@ -423,7 +424,8 @@ setSB() {
 					$(isEmpty "$sniff_override_destination" || echo ,\"sniff_override_destination\": $sniff_override_destination)
 				})"
 		fi
-		jsonSetjson config '.inbounds=$ARGS.positional[0]' "$inbounds"
+		config="[$config,$inbounds]"
+		jsonSet config '.[0].inbounds=.[1] | .[0]'
 
 		# clash_api_external_controller
 		isEmpty "$clash_api_external_controller" ||

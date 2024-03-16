@@ -698,22 +698,25 @@ build_outbound() {
 
 	if [ "$(jsonSelect tags 'length')" -gt 0 ]; then
 		jsonSetjson import '[$ARGS.positional[0][] | select(.tag | test("^(\( $ARGS.positional[1] | join("|") ))$")) | {(.tag): .}] | add' "$PROVIDERS" "$tags"
-		for k in $(jsonSelect tags '.[]'); do
-			jsonSetjson import \
-				".$k.prefix as \$prefix
+		for k in $(jsonSelect tags '.[]' | tr -d '\r'); do
+			import="[$import,$(cat "$SUBSDIR/$k.json")]"
+			jsonSet import \
+				".[1] as \$provider
+				| .[0]
+				| .$k.prefix as \$prefix
 				| .$k.subgroup=(.$k.subgroup | arrays//[.])
-				| .$k.nodes=[ \$ARGS.positional[0] | .[] | .tag=\$prefix+.tag ]" \
-				"$(cat "$SUBSDIR/$k.json")"
+				| .$k.nodes=[ \$provider[] | .tag=\$prefix+.tag ]"
 		done
 		#echo $import
-		jsonSetjson result \
-			"$JQFUNC_outbounds $JQFUNC_addsubgroup"'$ARGS.positional[0] as $im
+		result="[$result,$import]"
+		jsonSet result \
+			"$JQFUNC_outbounds $JQFUNC_addsubgroup"'.[1] as $im
+			| .[0]
 			| outbounds($im)
 			# subgroup
 			| addsubgroup($im)
 			# nodes
-			| insertArray(length; [$im[].nodes[]])' \
-			"$import"
+			| insertArray(length; [$im[].nodes[]])'
 	else
 		jsonSet result "$JQFUNC_outbounds"'outbounds({"del":{"subgroup":[],"prefix":"","nodes":[]}})'
 	fi

@@ -1,3 +1,3 @@
-@chcp 65001 >nul
 @echo off
+@chcp 65001 >nul
 echo %cd%

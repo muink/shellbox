@@ -85,6 +85,12 @@ decodeBase64Str() {
 	#echo "$1" | base64 --decode
 }
 
+# func <str>
+encodeBase64Str() {
+	echo -n "$1" | jq -Rrc '@base64' 2>/dev/null
+	#echo -n "$1" | base64
+}
+
 checkVersion() {
 	local new="$(github_getLatest muink shellbox | sed 's|^v||')"
 	NEWWVER="${new:-null}"

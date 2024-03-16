@@ -141,12 +141,12 @@ windows_service() {
 	local ServiceName=shboxsvc
 	local cfg="${RUNICFG//$WORKDIR\//}"
 
-	local rcode=$(gsudo sc query $ServiceName >/dev/null || echo $?)
+	local rcode=$(sc query $ServiceName >/dev/null || echo $?)
 	_start() { gsudo sc query $ServiceName | grep -q "RUNNING" || gsudo sc start $ServiceName; }
 	_stop()  { gsudo sc query $ServiceName | grep -q "STOPPED" || gsudo sc stop $ServiceName; }
 	_enable()  { gsudo sc qc $ServiceName | grep -q "AUTO_START" || gsudo sc config $ServiceName start= auto; }
 	_disable() { gsudo sc qc $ServiceName | grep -q "DEMAND_START" || gsudo sc config $ServiceName start= demand; }
-	_delete() { [ -z "$rcode" ] && _stop && gsudo sc delete $ServiceName; }
+	_delete() { [ -z "$rcode" ] && { _stop; gsudo sc delete $ServiceName; } }
 	_checkProcess() { tasklist | grep -qi "$SINGBOX" && logs yeah "windows_service: Service is runing.\n"; }
 	_killProcess()  { tasklist | grep -qi "$SINGBOX" && taskkill /F /IM "$SINGBOX" >/dev/null; }
 
@@ -154,7 +154,8 @@ windows_service() {
 		install)
 			_delete; sleep 3
 			_killProcess
-			gsudo sc create $ServiceName binPath= "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${cfg////\\}\"" DisplayName= "ShellBox Service" start= auto
+			gsudo "$CMDSDIR/inssvc.sh" $ServiceName "$(encodeBase64Str "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${cfg////\\}\"")"
+			gsudo sc config $ServiceName DisplayName= "ShellBox Service" start= auto
 			gsudo sc description $ServiceName "ShellBox, a lightweight sing-box client base on shell/bash"
 			gsudo sc failure $ServiceName reset= 0 actions= restart/5000/restart/10000//
 			gsudo sc start $ServiceName

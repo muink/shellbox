@@ -466,14 +466,14 @@ setSB() {
 			if [ "$start_at_boot" = "true" ]; then
 				# service_mode
 				if [ "$service_mode" = "true" ]; then
-					windows_service install
+					windows_task install
 					windows_startup uninstall
 				else
 					windows_startup install
-					windows_service uninstall
+					windows_task uninstall
 				fi
 			else
-				windows_service uninstall
+				windows_task uninstall
 				windows_startup uninstall
 			fi
 		;;

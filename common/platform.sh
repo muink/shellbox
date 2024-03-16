@@ -136,39 +136,45 @@ getWindowsPath() {
 }
 
 # func <install|uninstall|start|stop|restart|enable|disable|check>
-windows_service() {
+windows_task() {
 	[ -n "$1" ] || return 1
-	local ServiceName=shboxsvc
+	local TaskName=ShellBox
 	local cfg="${RUNICFG//$WORKDIR\//}"
+	local bin="\"$(getWindowsPath "$BINADIR" | sed 's|\\|\\\\|g')\\\\$SINGBOX\""
+	local args="run -D \"$(getWindowsPath "$WORKDIR" | sed 's|\\|\\\\|g')\" -c \"${cfg////\\\\}\""
 
-	local rcode=$(sc query $ServiceName >/dev/null || echo $?)
-	_start() { gsudo sc query $ServiceName | grep -q "RUNNING" || gsudo sc start $ServiceName; }
-	_stop()  { gsudo sc query $ServiceName | grep -q "STOPPED" || gsudo sc stop $ServiceName; }
-	_enable()  { gsudo sc qc $ServiceName | grep -q "AUTO_START" || gsudo sc config $ServiceName start= auto; }
-	_disable() { gsudo sc qc $ServiceName | grep -q "DEMAND_START" || gsudo sc config $ServiceName start= demand; }
-	_delete() { [ -z "$rcode" ] && { _stop; gsudo sc delete $ServiceName; } }
-	_checkProcess() { tasklist | grep -qi "$SINGBOX" && logs yeah "windows_service: Service is runing.\n"; }
+	local rcode=$(gsudo schtasks /Query /TN "$TaskName" >/dev/null 2>&1 || echo $?)
+	_start() { gsudo schtasks /Query /TN "$TaskName" /FO list | grep -q '^Status:\s*Running' || gsudo schtasks /Run /TN "$TaskName"; sleep 3; }
+	_stop()  { gsudo schtasks /Query /TN "$TaskName" /FO list | grep -q '^Status:\s*Running' && gsudo schtasks /End /TN "$TaskName"; sleep 3; }
+	_enable()  { gsudo schtasks /Query /TN "$TaskName" /FO list | grep -q '^Status:\s*Disabled' && gsudo schtasks /Change /ENABLE  /TN "$TaskName"; }
+	_disable() { gsudo schtasks /Query /TN "$TaskName" /FO list | grep -q '^Status:\s*Disabled' || gsudo schtasks /Change /DISABLE /TN "$TaskName"; }
+	_delete() { [ -z "$rcode" ] && { _stop; gsudo schtasks /Delete /TN "$TaskName" /F; } }
+	_checkProcess() { tasklist | grep -qi "$SINGBOX" && logs yeah "windows_task: Task is runing.\n"; }
 	_killProcess()  { tasklist | grep -qi "$SINGBOX" && taskkill /F /IM "$SINGBOX" >/dev/null; }
 
 	case "$1" in
 		install)
-			_delete; sleep 3
 			_killProcess
-			gsudo "$CMDSDIR/inssvc.sh" $ServiceName "$(encodeBase64Str "\"$(getWindowsPath "$BINADIR")\\$SINGBOX\" run -D \"$(getWindowsPath "$WORKDIR")\" -c \"${cfg////\\}\"")"
-			gsudo sc config $ServiceName DisplayName= "ShellBox Service" start= auto
-			gsudo sc description $ServiceName "ShellBox, a lightweight sing-box client base on shell/bash"
-			gsudo sc failure $ServiceName reset= 0 actions= restart/5000/restart/10000//
-			gsudo sc start $ServiceName
+			cp -f "$CMDSDIR/task.xml" "/tmp/task.xml"
+			sed -i \
+				"s|<Command><bin></Command>|<Command>$bin</Command>|
+				;s|<Arguments><args></Arguments>|<Arguments>$args</Arguments>|" \
+				"/tmp/task.xml"
+			pushd /tmp >/dev/null
+			gsudo schtasks /Create /XML task.xml /TN "$TaskName" /F
+			popd >/dev/null
+			gsudo schtasks /Run /TN "$TaskName"
+			sleep 3
 			_checkProcess
 		;;
 		uninstall)
-			_delete; sleep 3
+			_delete
 			_killProcess
 		;;
-		start) [ -z "$rcode" ] || { logs err "windows_service: Service not installed.\n"; return 1; } && _start;;
+		start) [ -z "$rcode" ] || { logs err "windows_task: Task not installed.\n"; return 1; } && _start;;
 		stop) [ -z "$rcode" ] && _stop;;
 		restart)
-			_stop; sleep 3
+			_stop
 			_killProcess
 			_start
 		;;
@@ -239,8 +245,8 @@ darwin_daemon() {
 	local plist="/Library/LaunchDaemons/$ServiceName.plist"
 
 	local rcode=$(sudo launchctl list | grep -q "$ServiceName" || echo $?)
-	_start() { sudo launchctl   load "$plist"; }
-	_stop()  { sudo launchctl unload "$plist"; }
+	_start() { sudo launchctl   load "$plist"; sleep 3; }
+	_stop()  { sudo launchctl unload "$plist"; sleep 3; }
 	_enable()  { sudo launchctl   load -w "$plist"; }
 	_disable() { sudo launchctl unload -w "$plist"; }
 	_checkProcess() { pgrep -f "$SINGBOX" >/dev/null && logs yeah "darwin_daemon: Service is runing.\n"; }
@@ -291,7 +297,7 @@ darwin_daemon() {
 		start) [ -f "$plist" ] || { logs err "darwin_daemon: Service not installed.\n"; return 1; } && _start;;
 		stop) [ -z "$rcode" ] && _stop;;
 		restart)
-			_stop; sleep 3
+			_stop
 			_killProcess
 			_start
 		;;

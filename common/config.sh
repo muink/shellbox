@@ -462,18 +462,16 @@ setSB() {
 				windows_mkdash "."
 			fi
 
-			# start_at_boot
-			if [ "$start_at_boot" = "true" ]; then
-				# service_mode
-				if [ "$service_mode" = "true" ]; then
-					windows_task install
-					windows_startup uninstall
-				else
-					windows_startup install
-					windows_task uninstall
-				fi
+			# service_mode
+			if [ "$service_mode" = "true" ]; then
+				windows_task install
 			else
 				windows_task uninstall
+			fi
+			# start_at_boot
+			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
+				windows_startup install
+			else
 				windows_startup uninstall
 			fi
 		;;
@@ -484,18 +482,16 @@ setSB() {
 				windows_mkdash "."
 			fi
 
-			# start_at_boot
-			if [ "$start_at_boot" = "true" ]; then
-				# service_mode
-				if [ "$service_mode" = "true" ]; then
-					darwin_daemon install
-					darwin_startup uninstall "shellbox.command"
-				else
-					darwin_startup install "shellbox.command"
-					darwin_daemon uninstall
-				fi
+			# service_mode
+			if [ "$service_mode" = "true" ]; then
+				darwin_daemon install
 			else
 				darwin_daemon uninstall
+			fi
+			# start_at_boot
+			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
+				darwin_startup install "shellbox.command"
+			else
 				darwin_startup uninstall "shellbox.command"
 			fi
 		;;
@@ -506,9 +502,12 @@ setSB() {
 				linux_mkdash "."
 			fi
 
+			# service_mode
+			if [ "$service_mode" = "true" ]; then
+			else
+			fi
 			# start_at_boot
-			if [ "$start_at_boot" = "true" ]; then
-				# service_mode
+			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
 			else
 			fi
 		;;

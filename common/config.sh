@@ -282,6 +282,8 @@ verifySettings() {
 
 setSB() {
 	[ -x "$(command -v "$SINGBOX")" ] || { logs err "sing-box is not installed.\n"; return 1; }
+	local lastsetting="$(cat "$STATDIR/$HOSTNAME")"
+	local statrenewal=false
 	local setting="$(cat "$MAINSET")"
 	local settings="$(jsonSelect setting '.settings')"
 	verifySettings "$settings" || return 1
@@ -463,16 +465,21 @@ setSB() {
 			fi
 
 			# service_mode
-			if [ "$service_mode" = "true" ]; then
-				windows_task install
-			else
-				windows_task uninstall
+			if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+				[ "$service_mode" = "true" ] \
+					&& windows_task install \
+					|| windows_task uninstall
+				jsonSet lastsetting ".last_settings.service_mode=$service_mode"
+				statrenewal=true
 			fi
 			# start_at_boot
-			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
-				windows_startup install
-			else
-				windows_startup uninstall
+			if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
+			|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
+					&& windows_startup install \
+					|| windows_startup uninstall
+				jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
+				statrenewal=true
 			fi
 		;;
 		darwin)
@@ -483,16 +490,21 @@ setSB() {
 			fi
 
 			# service_mode
-			if [ "$service_mode" = "true" ]; then
-				darwin_daemon install
-			else
-				darwin_daemon uninstall
+			if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+				[ "$service_mode" = "true" ] \
+					&& darwin_daemon install \
+					|| darwin_daemon uninstall
+				jsonSet lastsetting ".last_settings.service_mode=$service_mode"
+				statrenewal=true
 			fi
 			# start_at_boot
-			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
-				darwin_startup install "shellbox.command"
-			else
-				darwin_startup uninstall "shellbox.command"
+			if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
+			|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
+					&& darwin_startup install "shellbox.command" \
+					|| darwin_startup uninstall "shellbox.command"
+				jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
+				statrenewal=true
 			fi
 		;;
 		linux)
@@ -503,18 +515,25 @@ setSB() {
 			fi
 
 			# service_mode
-			if [ "$service_mode" = "true" ]; then
-				linux_daemon install
-			else
-				linux_daemon uninstall
+			if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+				[ "$service_mode" = "true" ] \
+					&& linux_daemon install \
+					|| linux_daemon uninstall
+				jsonSet lastsetting ".last_settings.service_mode=$service_mode"
+				statrenewal=true
 			fi
 			# start_at_boot
-			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
-				linux_startup install
-			else
-				linux_startup uninstall
+			if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
+			|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
+					&& linux_startup install \
+					|| linux_startup uninstall
+				jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
+				statrenewal=true
 			fi
 		;;
 	esac
 
+	# status
+	[ "$statrenewal" = "true" ] && echo "$lastsetting" > "$STATDIR/$HOSTNAME"
 }

@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-# return: $OS $ARCH
+# return: $OS $ARCH $HOSTNAME
 getSysinfo() {
 	case "$OSTYPE" in
 		linux-gnu)
@@ -43,6 +43,7 @@ getSysinfo() {
 	esac
 	[ -n "$OS" -a -n "$ARCH" ] || err "Unsupported system or architecture.\n"
 	[ "$OS" = "windows" -a "$ARCH" = "arm64" ] && err "Unsupported system or architecture.\n"
+	export HOSTNAME="$(hostname)"
 	return 0
 }
 

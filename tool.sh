@@ -21,6 +21,7 @@ export MAINDIR="$(cd $(dirname "$0"); pwd)"
 export BINADIR="$MAINDIR/bin"
 export COMMDIR="$MAINDIR/common"
 export CMDSDIR="$MAINDIR/scripts"
+export STATDIR="$MAINDIR/.status"
 export MAINSET="$MAINDIR/settings.json"
 export MAINLOG="$MAINDIR/shellbox.log"
 
@@ -45,6 +46,7 @@ export PATH="$BINADIR:$BINADIR/gsudo:$PATH"
 
 # Init
 [ -d "$BINADIR" ] || mkdir -p "$BINADIR"
+[ -d "$STATDIR" ] || mkdir -p "$STATDIR"
 [ -f "$MAINSET" ] || echo '{}' > "$MAINSET"
 [ -f "$MAINLOG" ] && { [ $(wc -l "$MAINLOG" | awk '{print $1}') -gt 1000 ] && sed -i "1,300d"; }
 #

@@ -456,83 +456,68 @@ setSB() {
 	return 0
 
 	# platform
-	case "$OS" in
-		windows)
-			# shortcut
-			if [ "$shortcut" = "true" ]; then
+	# shortcut
+	if [ "$shortcut" = "true" ]; then
+		case "$OS" in
+			windows)
 				windows_mkrun "shellbox.bat"
 				windows_mkdash "."
-			fi
-
-			# service_mode
-			if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+			;;
+			darwin)
+				darwin_mkrun "shellbox.command"
+				windows_mkdash "."
+			;;
+			linux)
+				linux_mkrun "shellbox.desktop"
+				linux_mkdash "."
+			;;
+		esac
+	fi
+	# service_mode
+	if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+		case "$OS" in
+			windows)
 				[ "$service_mode" = "true" ] \
 					&& windows_task install \
 					|| windows_task uninstall
-				jsonSet lastsetting ".last_settings.service_mode=$service_mode"
-				statrenewal=true
-			fi
-			# start_at_boot
-			if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
-			|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
-				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
-					&& windows_startup install \
-					|| windows_startup uninstall
-				jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
-				statrenewal=true
-			fi
-		;;
-		darwin)
-			# shortcut
-			if [ "$shortcut" = "true" ]; then
-				darwin_mkrun "shellbox.command"
-				windows_mkdash "."
-			fi
-
-			# service_mode
-			if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+			;;
+			darwin)
 				[ "$service_mode" = "true" ] \
 					&& darwin_daemon install \
 					|| darwin_daemon uninstall
-				jsonSet lastsetting ".last_settings.service_mode=$service_mode"
-				statrenewal=true
-			fi
-			# start_at_boot
-			if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
-			|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
-				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
-					&& darwin_startup install "shellbox.command" \
-					|| darwin_startup uninstall "shellbox.command"
-				jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
-				statrenewal=true
-			fi
-		;;
-		linux)
-			# shortcut
-			if [ "$shortcut" = "true" ]; then
-				linux_mkrun "shellbox.desktop"
-				linux_mkdash "."
-			fi
-
-			# service_mode
-			if [ "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+			;;
+			linux)
 				[ "$service_mode" = "true" ] \
 					&& linux_daemon install \
 					|| linux_daemon uninstall
-				jsonSet lastsetting ".last_settings.service_mode=$service_mode"
-				statrenewal=true
-			fi
-			# start_at_boot
-			if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
-			|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+			;;
+		esac
+		jsonSet lastsetting ".last_settings.service_mode=$service_mode"
+		statrenewal=true
+	fi
+	# start_at_boot
+	if [ "$start_at_boot" != "$(jsonSelect lastsetting '.last_settings.start_at_boot')" ] \
+	|| [ "$start_at_boot" = "true" -a "$service_mode" != "$(jsonSelect lastsetting '.last_settings.service_mode')" ]; then
+		case "$OS" in
+			windows)
+				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
+					&& windows_startup install \
+					|| windows_startup uninstall
+			;;
+			darwin)
+				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
+					&& darwin_startup install "shellbox.command" \
+					|| darwin_startup uninstall "shellbox.command"
+			;;
+			linux)
 				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
 					&& linux_startup install \
 					|| linux_startup uninstall
-				jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
-				statrenewal=true
-			fi
-		;;
-	esac
+			;;
+		esac
+		jsonSet lastsetting ".last_settings.start_at_boot=$start_at_boot"
+		statrenewal=true
+	fi
 
 	# status
 	[ "$statrenewal" = "true" ] && echo "$lastsetting" > "$STATDIR/$HOSTNAME"

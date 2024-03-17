@@ -337,6 +337,12 @@ darwin_startup() {
 	esac
 }
 
+# func <install|uninstall|start|stop|restart|enable|disable|check>
+linux_daemon() {
+	local initd
+	ls -l /sbin/init | grep -q "systemd" && initd=systemd || initd=sysv
+}
+
 # func <target>
 linux_mkrun() {
 	[ -n "$1" ] || return 1

@@ -126,6 +126,10 @@ depCheck() {
 				grep -q "$tmp" ~/.bashrc || echo "$tmp" >> ~/.bashrc
 			} || err "Please install \"https://gerardog.github.io/gsudo/\"\n"
 		fi
+		if ! command -v EnableLoopback.exe >/dev/null; then
+			downloadTo "https://github.com/Kuingsmile/uwp-tool/releases/latest/download/EnableLoopback.exe" "$BINADIR/EnableLoopback.exe"
+			command -v EnableLoopback.exe >/dev/null || err "Please download \"https://github.com/Kuingsmile/uwp-tool/releases/latest/download/EnableLoopback.exe\" and put to \"$BINADIR/EnableLoopback.exe\"\n"
+		fi
 	fi
 }
 

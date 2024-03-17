@@ -508,7 +508,9 @@ setSB() {
 			fi
 			# start_at_boot
 			if [ "$start_at_boot" = "true" -a "$service_mode" != "true" ]; then
+				linux_startup install
 			else
+				linux_startup uninstall
 			fi
 		;;
 	esac

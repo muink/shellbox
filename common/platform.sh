@@ -355,6 +355,20 @@ linux_mkrun() {
 	EOF
 }
 
+# func <install|uninstall>
+linux_startup() {
+	[ -n "$1" ] || return 1
+
+	case "$1" in
+		install)
+			grep -q "$SINGBOX" /etc/crontab || sudo sed -i "\$a\\@reboot root sleep 10s; \"$BINADIR/$SINGBOX\" run -D \"$WORKDIR\" -c \"$cfg\"" /etc/crontab
+		;;
+		uninstall)
+			grep -q "$SINGBOX" /etc/crontab && sudo sed -i "/$SINGBOX/d" /etc/crontab
+		;;
+	esac
+}
+
 # func <targetdir>
 linux_mkdash() {
 	[ -n "$1" ] || return 1

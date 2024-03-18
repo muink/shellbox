@@ -282,7 +282,8 @@ verifySettings() {
 
 setSB() {
 	[ -x "$(command -v "$SINGBOX")" ] || { logs err "sing-box is not installed.\n"; return 1; }
-	local lastsetting="$(cat "$STATDIR/$HOSTNAME")"
+	local lastsetting="$(cat "$STATDIR/$HOSTNAME" 2>/dev/null)"
+	[ -z "$lastsetting" ] && lastsetting='{}'
 	local statrenewal=false
 	local setting="$(cat "$MAINSET")"
 	local settings="$(jsonSelect setting '.settings')"
@@ -478,8 +479,8 @@ setSB() {
 		case "$OS" in
 			windows)
 				[ "$service_mode" = "true" ] \
-					&& windows_task install \
-					|| windows_task uninstall
+					&& windows_schedule install \
+					|| windows_schedule uninstall
 			;;
 			darwin)
 				[ "$service_mode" = "true" ] \

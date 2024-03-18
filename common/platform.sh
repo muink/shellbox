@@ -141,7 +141,7 @@ getWindowsPath() {
 }
 
 # func <install|uninstall|start|stop|restart|enable|disable|check>
-windows_task() {
+windows_schedule() {
 	[ -n "$1" ] || return 1
 	local TaskName=ShellBox
 	local cfg="${RUNICFG//$WORKDIR\//}"
@@ -154,7 +154,7 @@ windows_task() {
 	_enable()  { gsudo schtasks /Query /TN "$TaskName" /FO list | grep -q '^Status:\s*Disabled' && gsudo schtasks /Change /ENABLE  /TN "$TaskName"; }
 	_disable() { gsudo schtasks /Query /TN "$TaskName" /FO list | grep -q '^Status:\s*Disabled' || gsudo schtasks /Change /DISABLE /TN "$TaskName"; }
 	_delete() { [ -z "$rcode" ] && { _stop; gsudo schtasks /Delete /TN "$TaskName" /F; } }
-	_checkProcess() { tasklist | grep -qi "$SINGBOX" && logs yeah "windows_task: Task is runing.\n"; }
+	_checkProcess() { tasklist | grep -qi "$SINGBOX" && logs yeah "windows_schedule: Task is runing.\n"; }
 	_killProcess()  { tasklist | grep -qi "$SINGBOX" && taskkill /F /IM "$SINGBOX" >/dev/null; }
 
 	case "$1" in
@@ -176,7 +176,7 @@ windows_task() {
 			_delete
 			_killProcess
 		;;
-		start) [ -z "$rcode" ] || { logs err "windows_task: Task not installed.\n"; return 1; } && _start;;
+		start) [ -z "$rcode" ] || { logs err "windows_schedule: Task not installed.\n"; return 1; } && _start;;
 		stop) [ -z "$rcode" ] && _stop;;
 		restart)
 			_stop

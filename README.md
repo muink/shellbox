@@ -25,4 +25,51 @@ This project is a simple sing-box client running on Linux, Windows and MacOS.
 
 ## Documentation
 
-See [Readme](./docs/README.md).
+### First running
+
+**NOTE:** May not work properly when path contains spaces and special characters
+
+1. Initialize environment
+   + 🐧`Linux`: Run `./tool.sh`, and follow the prompts to install missing dependencies.
+   + 🍎`MacOS`: Install [Homebrew][], then run `./tool.sh`, and follow the prompts to install missing dependencies.
+   + 🪟`Windows`: Install [Cygwin][] or [MinGW64][], then run `./tool.sh`, and follow the prompts to install missing dependencies.
+2. Download core
+   + Run `./tool.sh`, type **5** to Upgrade core.
+3. Installation dashboard (Optional)
+   + Put dashboard assets into `./resources/ui/`.
+
+### How to configure it
+
+Settings see [Readme](./docs/README.md).
+
+### Generate config and start sing-box
+
+1. Exec `./tool.sh -ug --setup`
+2. User mode
+   + 🐧`Linux`: Run `./shellbox.desktop`.
+   + 🍎`MacOS`: Run `./shellbox.command`.
+   + 🪟`Windows`: Run `./shellbox.bat`.
+3. Service mode control
+
+### How to safely uninstall service or auto-start
+
+1. Automatically
+   + Disable `service_mode`, `start_at_boot` in `settings.json`
+   + Run `./tool.sh --setup`
+2. Manually
+   + Service
+      + 🐧`Linux`:
+         + systemd: 
+         + SysV: 
+      + 🍎`MacOS`: Run `cd /Library/LaunchDaemons; sudo launchctl unload shellbox.service.plist; sudo rm -f shellbox.service.plist`.
+      + 🪟`Windows`: Open Windows schedule, remove `ShellBox` task.
+   + Auto-start
+      + 🐧`Linux`: Remove the line containing `shellbox_core` from `/etc/crontab`.
+      + 🍎`MacOS`: Remove `shellbox.command` from [Login items][].
+      + 🪟`Windows`: Enter `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup` directory, remove `shellbox.bat`.
+
+
+[Homebrew]: https://brew.sh/
+[Cygwin]: https://www.cygwin.com/
+[MinGW64]: https://www.mingw-w64.org/
+[Login items]: https://support.apple.com/guide/mac-help/remove-login-items-resolve-startup-problems-mh21210/mac

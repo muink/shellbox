@@ -215,9 +215,8 @@ windows_startup() {
 	esac
 }
 
-# func <targetdir>
+# func
 windows_mkdash() {
-	[ -n "$1" ] || return 1
 	local clash_api="$(jq -rc '.experimental.clash_api//""' "$RUNICFG")"
 	local host="$(jsonSelect clash_api '.external_controller')"
 	[ -n "$host" ] || return 0
@@ -234,9 +233,9 @@ windows_mkdash() {
 		EOF
 	}
 
-	_mkurl "http://${hostname}:${port}/ui/" > "${1:-.}/dashboard.url"
-	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" > "${1:-.}/yacd.url"
-	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" > "${1:-.}/razord.url"
+	_mkurl "http://${hostname}:${port}/ui/" > dashboard.url
+	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" > yacd.url
+	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" > razord.url
 }
 
 # func <install|uninstall|start|stop|restart|enable|disable|check>
@@ -380,9 +379,8 @@ linux_startup() {
 	esac
 }
 
-# func <targetdir>
+# func
 linux_mkdash() {
-	[ -n "$1" ] || return 1
 	local clash_api="$(jq -rc '.experimental.clash_api//""' "$RUNICFG")"
 	local host="$(jsonSelect clash_api '.external_controller')"
 	[ -n "$host" ] || return 0
@@ -397,15 +395,15 @@ linux_mkdash() {
 		[Desktop Entry]
 		Encoding=UTF-8
 		Type=Link
-		Name=${2^}
+		Name=$2
 		Icon=text-html
 		URL=$1
 		EOF
 	}
 
-	_mkurl "http://${hostname}:${port}/ui/" dashboard > "${1:-.}/dashboard.desktop"
-	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" yacd > "${1:-.}/yacd.desktop"
-	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" razord > "${1:-.}/razord.desktop"
+	_mkurl "http://${hostname}:${port}/ui/" Dashboard > dashboard.desktop
+	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" Yacd > yacd.desktop
+	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" Razord > razord.desktop
 }
 
 randomUUID() {

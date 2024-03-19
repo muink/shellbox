@@ -462,15 +462,15 @@ setSB() {
 		case "$OS" in
 			windows)
 				windows_mkrun "shellbox.bat"
-				windows_mkdash "."
+				windows_mkdash
 			;;
 			darwin)
 				darwin_mkrun "shellbox.command"
-				windows_mkdash "."
+				windows_mkdash
 			;;
 			linux)
 				linux_mkrun "shellbox.desktop"
-				linux_mkdash "."
+				linux_mkdash
 			;;
 		esac
 	fi

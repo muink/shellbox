@@ -507,7 +507,8 @@ setSB() {
 			;;
 			darwin)
 				[ "$start_at_boot" = "true" -a "$service_mode" != "true" ] \
-					&& darwin_startup install "shellbox.command" \
+					&& { darwin_mkrun "shellbox.command";
+					   darwin_startup install "shellbox.command"; } \
 					|| darwin_startup uninstall "shellbox.command"
 			;;
 			linux)

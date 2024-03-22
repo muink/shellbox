@@ -362,7 +362,7 @@ linux_daemon() {
 			_killProcess
 			cat <<- EOF > "/tmp/$ServiceName"
 				[Unit]
-				Description=ShellBox, a lightweight sing-box client base on shell/bash
+				Description=ShellBox, A lightweight sing-box subconverter/client base on shell/bash
 				After=network.target nss-lookup.target network-online.target
 				
 				[Service]

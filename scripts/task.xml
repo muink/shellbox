@@ -2,7 +2,7 @@
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author>https://github.com/muink/shellbox</Author>
-    <Description>ShellBox, a lightweight sing-box client base on shell/bash</Description>
+    <Description>ShellBox, A lightweight sing-box subconverter/client base on shell/bash</Description>
     <URI>\ShellBox</URI>
   </RegistrationInfo>
   <Triggers>

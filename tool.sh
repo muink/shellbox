@@ -5,7 +5,7 @@
 # See /LICENSE for more information.
 #
 
-VERSION=0.6
+VERSION=0.7
 LOGO="\
 =================================================
           ___ _        _ _ ___              　
@@ -159,6 +159,8 @@ $LOGO
         5. Upgrade core
       ------------------------------
         a. Setup sing-box with current config
+        b. Start service
+        c. Stop service
         x. Exit
 =================================================
 EOF
@@ -175,6 +177,32 @@ case "$MENUID" in
 
 		EOF
 		setSB
+		pause
+	;;
+	b)
+		clear
+		cat <<- EOF
+		$LOGO
+
+		EOF
+		case "$OS" in
+			windows) windows_schedule start;;
+			darwin) darwin_daemon start;;
+			linux) linux_daemon start;;
+		esac
+		pause
+	;;
+	c)
+		clear
+		cat <<- EOF
+		$LOGO
+
+		EOF
+		case "$OS" in
+			windows) windows_schedule stop;;
+			darwin) darwin_daemon stop;;
+			linux) linux_daemon stop;;
+		esac
 		pause
 	;;
 	1)

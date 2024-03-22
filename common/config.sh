@@ -454,8 +454,6 @@ setSB() {
 	$SINGBOX check -D "$WORKDIR" -c "$RUNICFG"
 	[ $? = 0 ] || { logs err "setSB: runtime config check is failed.\n"; return 1; }
 
-	return 0
-
 	# platform
 	# shortcut
 	if [ "$shortcut" = "true" ]; then

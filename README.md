@@ -22,8 +22,10 @@ This project is a simple sing-box client running on Linux, Windows and MacOS.
 + Automatically import subscriptions nodes (v2ray format only)
 + Generate complete sing-box config file from templates
 + Online upgrade
++ Install service or auto-start
++ Create Shortcut
 
-## Documentation
+## Manual
 
 ### First running
 
@@ -40,9 +42,9 @@ This project is a simple sing-box client running on Linux, Windows and MacOS.
 
 ### How to configure it
 
-Settings see [Readme](./docs/README.md).
+See [Readme](./docs/README.md).
 
-### Generate config and start sing-box
+### Generate config and setup sing-box
 
 1. Exec `./tool.sh -ug --setup`
 2. User mode
@@ -66,6 +68,42 @@ Settings see [Readme](./docs/README.md).
       + 🐧`Linux`: Remove the line containing `shellbox_core` from `/etc/crontab`.
       + 🍎`MacOS`: Remove `shellbox.command` from [Login items][].
       + 🪟`Windows`: Enter `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup` directory, remove `shellbox.bat`.
+
+## Usage
+
+**Command line mode:**
+
+``` shell
+Usage: tool.sh [OPTION]...
+
+  e.g. tool.sh -g          -- Rebuild configs
+  e.g. tool.sh -V          -- Returns version
+
+Options:
+  -e                       -- Redirect error message to log file
+  -g, --generate           -- Rebuild configs
+  -u, --update             -- Update subscriptions
+  --setup                  -- Setup sing-box
+  -V, --version            -- Returns version
+  -h, --help               -- Returns help info
+```
+
+**Interactive mode:**
+
+``` shell
+                     [Menu]
+
+        1. Rebuild configs
+        2. Update subscriptions
+        3. Check update
+        4. Upgrade shellbox
+        5. Upgrade core
+      ------------------------------
+        a. Setup sing-box with current config
+        b. Start service
+        c. Stop service
+        x. Exit
+```
 
 
 [Homebrew]: https://brew.sh/

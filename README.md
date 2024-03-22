@@ -59,8 +59,7 @@ Settings see [Readme](./docs/README.md).
 2. Manually
    + Service
       + 🐧`Linux`:
-         + systemd: 
-         + SysV: 
+         + systemd: Run `sudo systemctl stop shellbox; sudo systemctl disable shellbox; sudo rm -f /etc/systemd/system/shellbox.service`
       + 🍎`MacOS`: Run `cd /Library/LaunchDaemons; sudo launchctl unload shellbox.service.plist; sudo rm -f shellbox.service.plist`.
       + 🪟`Windows`: Open Windows schedule, remove `ShellBox` task.
    + Auto-start

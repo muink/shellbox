@@ -343,8 +343,65 @@ darwin_startup() {
 
 # func <install|uninstall|start|stop|restart|enable|disable|check>
 linux_daemon() {
-	local initd
-	ls -l /sbin/init | grep -q "systemd" && initd=systemd || initd=sysv
+	[ -n "$1" ] || return 1
+	ls -l /sbin/init | grep -q "systemd" || { logs err "linux_daemon: SysV is not supported.\n"; return 1; }
+	local ServiceName='shellbox'
+	local cfg="${RUNICFG//$WORKDIR\//}"
+	local service="/etc/systemd/system/$ServiceName.service"
+
+	[ "$(systemctl status "$ServiceName" >/dev/null 2>&1 || echo $?)" = "4" ] && local rcode=4
+	_start() { systemctl start "$ServiceName"; sleep 3; }
+	_stop()  { systemctl  stop "$ServiceName"; sleep 3; }
+	_enable()  { sudo systemctl  enable "$ServiceName"; }
+	_disable() { sudo systemctl disable "$ServiceName"; }
+	_checkProcess() { pgrep -f "$SINGBOX" >/dev/null && logs yeah "linux_daemon: Service is runing.\n"; }
+	_killProcess()  { sudo killall "$SINGBOX" 2>/dev/null; }
+
+	case "$1" in
+		install)
+			_killProcess
+			cat <<- EOF > "/tmp/$ServiceName"
+				[Unit]
+				Description=ShellBox, a lightweight sing-box client base on shell/bash
+				After=network.target nss-lookup.target network-online.target
+				
+				[Service]
+				CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+				AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_SYS_PTRACE CAP_DAC_READ_SEARCH
+				ExecStart="$BINADIR/$SINGBOX" run -D "$WORKDIR" -c "${cfg////\\}"
+				ExecReload=/bin/kill -HUP \$MAINPID
+				Restart=on-failure
+				RestartSec=10s
+				LimitNOFILE=infinity
+				
+				[Install]
+				WantedBy=multi-user.target
+			EOF
+			sudo cp -f "/tmp/$ServiceName" "$service"
+			sudo chmod 644 "$service"
+			_enable
+			_start
+			_checkProcess
+		;;
+		uninstall)
+			_killProcess
+			[ -z "$rcode" ] && {
+				_stop
+				_disable
+				sudo rm -f "$service"
+			}
+		;;
+		start) [ -z "$rcode" ] || { logs err "linux_daemon: Service not installed.\n"; return 1; } && _start;;
+		stop) [ -z "$rcode" ] && _stop;;
+		restart)
+			_stop
+			_killProcess
+			_start
+		;;
+		enable) [ -z "$rcode" ] && _enable;;
+		disable) [ -z "$rcode" ] && _disable;;
+		check) [ -z "$rcode" ] && _checkProcess;;
+	esac
 }
 
 # func <target>

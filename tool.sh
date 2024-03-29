@@ -59,7 +59,7 @@ export PATH="$BINADIR:$BINADIR/gsudo:$PATH"
 getSysinfo || { pause; exit; }
 [ "$OS" = "windows" ] && getWindowsPath >/dev/null
 [ "$OS" = "darwin" ] &&
-	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$PATH"
+	export PATH="$(brew --prefix)/opt/coreutils/libexec/gnubin:$(brew --prefix)/opt/gnu-sed/libexec/gnubin:$(brew --prefix)/opt/gnu-getopt/bin:$(brew --prefix)/opt/gawk/libexec/gnubin:$(brew --prefix)/opt/base64/bin:$PATH"
 depCheck || { pause; exit; }
 export SINGBOX=$( [ "$OS" = "darwin" ] && echo darwin_)shellbox_core$( [ "$OS" = "windows" ] && echo .exe)
 [ -x "$(command -v "$SINGBOX")" ] && getCoreFeatures

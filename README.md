@@ -34,7 +34,7 @@ This project is a simple sing-box client running on Linux, Windows and MacOS.
 1. Initialize environment
    + 🐧`Linux`: Run `./tool.sh`, and follow the prompts to install missing dependencies.
    + 🍎`MacOS`: Install [Homebrew][], then run `./tool.sh`, and follow the prompts to install missing dependencies.
-   + 🪟`Windows`: Install [Cygwin][] or [MinGW64][], then run `./tool.sh`, and follow the prompts to install missing dependencies.
+   + 🪟`Windows`: Install [Cygwin][] or [MinGW64][] or [Git4windows][], then run `./tool.sh`, and follow the prompts to install missing dependencies.
 2. Download core
    + Run `./tool.sh`, type **5** to Upgrade core.
 3. Installation dashboard (Optional)
@@ -109,4 +109,5 @@ Options:
 [Homebrew]: https://brew.sh/
 [Cygwin]: https://www.cygwin.com/
 [MinGW64]: https://www.mingw-w64.org/
+[Git4windows]: https://git-scm.com/
 [Login items]: https://support.apple.com/guide/mac-help/remove-login-items-resolve-startup-problems-mh21210/mac

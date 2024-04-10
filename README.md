@@ -14,7 +14,7 @@
 [![Releases](https://img.shields.io/badge/Documentation-8A2BE2?style=flat-square)](./docs/README.md)
 [![Releases](https://img.shields.io/github/license/muink/shellbox?style=flat-square&colorB=blue)](./LICENSE)
 
-This project is a simple sing-box client running on Linux, Windows and MacOS.
+This project is a simple [sing-box][] client running on Linux, Windows and MacOS.
 
 ## Features
 
@@ -105,7 +105,7 @@ Options:
         x. Exit
 ```
 
-
+[sing-box]: https://github.com/SagerNet/sing-box
 [Homebrew]: https://brew.sh/
 [Cygwin]: https://www.cygwin.com/
 [MinGW64]: https://www.mingw-w64.org/

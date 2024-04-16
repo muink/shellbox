@@ -413,7 +413,7 @@ setSB() {
 				"push({
 					\"type\": \"tun\",
 					\"tag\": \"shellbox-tun-in\",
-					\"interface_name\": \"\",
+					\"interface_name\": $([ "$OS" = "windows" ] && echo \"shellbox-tun\" || echo \"\"),
 					\"inet4_address\": \"172.19.0.1/30\",
 					\"inet6_address\": \"fdfe:dcba:9876::1/126\",
 					\"mtu\": 9000,
@@ -455,6 +455,23 @@ setSB() {
 	[ $? = 0 ] || { logs err "setSB: runtime config check is failed.\n"; return 1; }
 
 	# platform
+	# firewall
+	case "$OS" in
+		windows)
+			if [ "$tun_in_enabled" = "true" ]; then
+				#winNetworkList='HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles'
+				#tuninface_guid=$(echo -e $(gsudo reg query "$winNetworkList" //s //v ProfileName | head -n -1 | tr -d '\r' | sed -E 's|.*(\{[[:xdigit:]-]+\})$|\1|;s|^$|\\n|') | grep shellbox-tun | awk '{print $1}')
+				#reg add "$winNetworkList\\$tuninface_guid" //v Category //t REG_DWORD //d 1 //f
+				gsudo "$CMDSDIR/opentunfw.cmd"
+			fi
+		;;
+		darwin)
+			sleep 0
+		;;
+		linux)
+			sleep 0
+		;;
+	esac
 	# shortcut
 	if [ "$shortcut" = "true" ]; then
 		case "$OS" in

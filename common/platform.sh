@@ -234,6 +234,7 @@ windows_mkdash() {
 	}
 
 	_mkurl "http://${hostname}:${port}/ui/" > dashboard.url
+	_mkurl "http://d.metacubex.one/#/setup?hostname=${hostname}&port=${port}&secret=${secret}" > metacubexd.url
 	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" > yacd.url
 	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" > razord.url
 }
@@ -459,6 +460,7 @@ linux_mkdash() {
 	}
 
 	_mkurl "http://${hostname}:${port}/ui/" Dashboard > dashboard.desktop
+	_mkurl "http://d.metacubex.one/#/setup?hostname=${hostname}&port=${port}&secret=${secret}" > metacubexd.desktop
 	_mkurl "http://yacd.metacubex.one/?hostname=${hostname}&port=${port}&secret=${secret}" Yacd > yacd.desktop
 	_mkurl "http://clash.metacubex.one/?host=${hostname}&port=${port}&secret=${secret}" Razord > razord.desktop
 }

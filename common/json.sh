@@ -43,10 +43,10 @@ strToString() {
 	local str
 	if [ -z "$1" ]; then
 		while read -r -t1 str; do
-			echo "$str" | sed 's|^|"|;s|$|"|'
+			sed 's|^|"|;s|$|"|' <<< "$str"
 		done
 	else
-		echo "$1" | sed 's|^|"|;s|$|"|'
+		sed 's|^|"|;s|$|"|' <<< "$1"
 	fi
 }
 
@@ -54,10 +54,10 @@ StringTostr() {
 	local str
 	if [ -z "$1" ]; then
 		while read -r -t1 str; do
-			echo "$str" | sed 's|^"||;s|"$||'
+			sed 's|^"||;s|"$||' <<< "$str"
 		done
 	else
-		echo "$1" | sed 's|^"||;s|"$||'
+		sed 's|^"||;s|"$||' <<< "$1"
 	fi
 }
 

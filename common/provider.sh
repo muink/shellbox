@@ -25,7 +25,7 @@ urldecode() {
 # func <rawurl>
 urlencode() {
 	[ -z "$1" ] && return 0
-	echo "$1" | jq -Rr '@uri'
+	jq -Rr '@uri' <<< "$1"
 }
 
 # func <url>
@@ -47,7 +47,7 @@ validation() {
 	[ -n "$2" ] && { local str="$2"; } || { logs err "validation: String is empty.\n"; return 1; }
 	case "$type" in
 		features)
-			echo "$SBFEATURES" | grep -q "\b$str\b" || return 1
+			grep -q "\b$str\b" <<< "$SBFEATURES" || return 1
 		;;
 		host)
 			validation hostname "$str" || validation ipaddr4 "$str" || validation ipaddr6 "$str" && return 0
@@ -81,7 +81,7 @@ fe80:(:[[:xdigit:]]{0,4}){0,4}%\w+|\
 ([[:xdigit:]]{1,4}:){1,4}:((25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2})\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9]{1,2}))$" || return 1
 		;;
 		md5)
-			[ "${#str}" -eq 32 ] && echo "$str" | grep -qE "^[[:xdigit:]]+$" || return 1
+			[ "${#str}" -eq 32 ] && grep -qE "^[[:xdigit:]]+$" <<< "$str" || return 1
 		;;
 		*)
 			logs err "validation: Invalid type '$type'.\n"
@@ -106,7 +106,7 @@ parseURL() {
 	# host    /^[\w\-\.]+/
 	# port    /^:(\d+)/
 	eval "$(echo "$url" | sed -En "s,^(([^@]+)@)?([[:alnum:]_\.-]+|\[[[:xdigit:]:\.]+\])(:([0-9]+))?(.*),userinfo='\2';host='\3';port='\5';url='\6',p")"
-	host="$(echo "$host" | tr -d '[]')"
+	host="$(tr -d '[]' <<< "$host")"
 	if [ -z "$port" ]; then
 		case "$protocol" in
 			http) port=80 ;;
@@ -477,7 +477,7 @@ parse_uri() {
 		;;
 		vmess)
 			# Shadowrocket format
-			if echo "$uri" | grep -q "&"; then
+			if grep -q "&" <<< "$uri"; then
 				logs warn "parse_uri: Skipping unsupported VMess node '$uri'.\n"
 				return 1
 			fi
@@ -575,7 +575,7 @@ parse_provider() {
 		logs warn "parse_provider: Unable to resolve resource from provider '$url'.\n"
 		return 1
 	}
-	total=$(echo "$nodes" | wc -l) count=0
+	total=$(wc -l <<< "$nodes") count=0
 
 	local time=$(date -u +%s%3N)
 	case "$OS" in
@@ -595,7 +595,7 @@ parse_provider() {
 		*)
 			tmpfd 8 # Results
 			tmpfd 6; for i in $(seq 1 $NPROC); do echo 0 >&6; done # Generate $NPROC tokens
-			for node in $(echo "$nodes" | awk '{print NR ">" $s}'); do
+			for node in $(awk '{print NR ">" $s}' <<< "$nodes"); do
 				read -u6 count # Take token
 				{
 					parse_uri result "${node#*>}"

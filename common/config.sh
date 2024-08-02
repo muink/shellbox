@@ -193,7 +193,7 @@ buildConfig() {
 		cfg_result="[$cfg_result,${outbounds:-[]}]"
 		jsonSet cfg_result '.[0].outbounds=.[1] | .[0]'
 
-		echo "$cfg_result" | jq > "$CONFDIR/$output.json"
+		jq <<< "$cfg_result" > "$CONFDIR/$output.json"
 		let count++
 	done
 	time=$[ $(date -u +%s%3N) - $time ]
@@ -447,7 +447,7 @@ setSB() {
 			*) jsonSet config '.route.default_interface=$ARGS.positional[0]' "$default_interface";;
 		esac
 
-		echo "$config" | jq > "$RUNICFG"
+		jq <<< "$config" > "$RUNICFG"
 	else
 		cp -f "$CONFDIR/$config.json" "$RUNICFG"
 	fi

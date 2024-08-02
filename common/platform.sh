@@ -221,8 +221,8 @@ windows_mkdash() {
 	local host="$(jsonSelect clash_api '.external_controller')"
 	[ -n "$host" ] || return 0
 
-	local hostname="$(echo "${host%:*}" | tr -d '[]')"
-	if echo "$hostname" | grep -qE "^::1?$"; then hostname='127.0.0.1'; fi
+	local hostname="$(tr -d '[]' <<< "${host%:*}")"
+	if grep -qE "^::1?$" <<< "$hostname"; then hostname='127.0.0.1'; fi
 	local port="${host##*:}"
 	local secret="$(jsonSelect clash_api '.secret')"
 
@@ -443,8 +443,8 @@ linux_mkdash() {
 	local host="$(jsonSelect clash_api '.external_controller')"
 	[ -n "$host" ] || return 0
 
-	local hostname="$(echo "${host%:*}" | tr -d '[]')"
-	if echo "$hostname" | grep -qE "^::1?$"; then hostname='127.0.0.1'; fi
+	local hostname="$(tr -d '[]' <<< "${host%:*}")"
+	if grep -qE "^::1?$" <<< "$hostname"; then hostname='127.0.0.1'; fi
 	local port="${host##*:}"
 	local secret="$(jsonSelect clash_api '.secret')"
 

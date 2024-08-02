@@ -81,8 +81,8 @@ calcStringMD5() {
 
 # func <str>
 decodeBase64Str() {
-	echo "$1" | jq -Rrc '@base64d' 2>/dev/null
-	#echo "$1" | base64 --decode
+	jq -Rrc '@base64d' <<< "$1" 2>/dev/null
+	#base64 --decode <<< "$1"
 }
 
 # func <str>

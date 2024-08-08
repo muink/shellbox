@@ -74,7 +74,7 @@ jsonSelect() {
 	eval "echo \"\$obj\" | jq -c --args '$JQFUNC_push $JQFUNC_insert $JQFUNC_insertArray $JQFUNC_strange $JQFUNC_urid ${filters:-.}' \"\$@\" | jq -rc './/\"\"'"
 }
 
-# func <objvar> <filters> [args]
+# func <objvar> <filters> [jsonargs]
 jsonSelectjson() {
 	local obj="${!1}" filters="$2"
 	shift 2

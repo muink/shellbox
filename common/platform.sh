@@ -7,20 +7,20 @@
 
 # return: $OS $ARCH $HOSTNAME
 getSysinfo() {
-	case "$OSTYPE" in
-		linux-gnu)
+	case "$(uname || echo $OSTYPE)" in
+		Linux|linux-gnu)
 			# Linux
 			export OS=linux
 		;;
-		darwin*)
+		Darwin|darwin*)
 			# Mac OSX
 			export OS=darwin
 		;;
-		cygwin)
+		CYGWIN_NT*|cygwin)
 			# POSIX compatibility layer and Linux environment emulation for Windows
 			export OS=windows
 		;;
-		msys)
+		MINGW32_NT*|MINGW64_NT*|MSYS_NT*|msys)
 			# Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
 			export OS=windows
 		;;
